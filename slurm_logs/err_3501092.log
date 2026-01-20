@@ -1,0 +1,19 @@
+
+CondaError: Run 'conda init' before 'conda activate'
+
+monai.transforms.spatial.dictionary Orientationd.__init__:labels: Current default value of argument `labels=(('L', 'R'), ('P', 'A'), ('I', 'S'))` was changed in version None from `labels=(('L', 'R'), ('P', 'A'), ('I', 'S'))` to `labels=None`. Default value changed to None meaning that the transform now uses the 'space' of a meta-tensor, if applicable, to determine appropriate axis labels.
+Traceback (most recent call last):
+  File "/public_bme2/bme-wangqian2/songhy2024/contrastive-unpaired-translation/predict_monai.py", line 53, in <module>
+    tester.test_volumes()
+  File "/public_bme2/bme-wangqian2/songhy2024/contrastive-unpaired-translation/test_monai.py", line 248, in test_volumes
+    self.save_nifti(fake_volume_masked, original_nii, str(fake_output_path), processed_data=processed_data)
+  File "/public_bme2/bme-wangqian2/songhy2024/contrastive-unpaired-translation/test_monai.py", line 107, in save_nifti
+    processed_image = processed_data["image"]
+                      ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/home_data/home/songhy2024/miniconda3/envs/kaolin/lib/python3.12/site-packages/monai/data/meta_tensor.py", line 283, in __torch_function__
+    ret = super().__torch_function__(func, types, args, kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home_data/home/songhy2024/miniconda3/envs/kaolin/lib/python3.12/site-packages/torch/_tensor.py", line 1648, in __torch_function__
+    ret = func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^
+IndexError: too many indices for tensor of dimension 4

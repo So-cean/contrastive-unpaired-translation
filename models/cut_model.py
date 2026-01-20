@@ -4,7 +4,8 @@ from .base_model import BaseModel
 from . import networks
 from .patchnce import PatchNCELoss
 import util.util as util
-
+from pytorch_msssim import ssim      
+import torch.nn.functional as F
 
 class CUTModel(BaseModel):
     """ This class implements CUT and FastCUT model, described in the paper
@@ -35,7 +36,10 @@ class CUTModel(BaseModel):
         parser.add_argument('--flip_equivariance',
                             type=util.str2bool, nargs='?', const=True, default=False,
                             help="Enforce flip-equivariance as additional regularization. It's used by FastCUT, but not CUT")
-
+        parser.add_argument('--lambda_SSIM', type=float, default=1.0, help='weight for SSIM loss')
+        parser.add_argument('--lambda_grad', type=float, default=0.5, help='weight for Sobel-gradient consistency')
+        
+        
         parser.set_defaults(pool_size=0)  # no image pooling
 
         opt, _ = parser.parse_known_args()
@@ -58,7 +62,7 @@ class CUTModel(BaseModel):
 
         # specify the training losses you want to print out.
         # The training/test scripts will call <BaseModel.get_current_losses>
-        self.loss_names = ['G_GAN', 'D_real', 'D_fake', 'G', 'NCE']
+        self.loss_names = ['G_GAN', 'D_real', 'D_fake', 'G', 'NCE', 'Idt', 'SSIM', 'Grad']
         self.visual_names = ['real_A', 'fake_B', 'real_B']
         self.nce_layers = [int(i) for i in self.opt.nce_layers.split(',')]
 
@@ -90,6 +94,27 @@ class CUTModel(BaseModel):
             self.optimizer_D = torch.optim.Adam(self.netD.parameters(), lr=opt.lr, betas=(opt.beta1, opt.beta2))
             self.optimizers.append(self.optimizer_G)
             self.optimizers.append(self.optimizer_D)
+
+    # ----------- SSIM -----------
+    def compute_ssim_loss(self, src, tgt):
+        # 需要 3 通道
+        src3 = src.repeat(1, 3, 1, 1)
+        tgt3 = tgt.repeat(1, 3, 1, 1)
+        return 1 - ssim(src3, tgt3, data_range=1.0, size_average=True)
+
+    # ----------- Sobel 梯度一致性 -----------
+    def sobel_grad_loss(self, src, tgt):
+        def sobel(x):
+            # 简单 3×3 sobel 核
+            kernel_x = torch.tensor([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]],
+                                    dtype=x.dtype, device=x.device).view(1, 1, 3, 3)
+            kernel_y = kernel_x.transpose(2, 3)
+            gx = F.conv2d(x, kernel_x, padding=1)
+            gy = F.conv2d(x, kernel_y, padding=1)
+            return gx, gy
+        sx_x, sx_y = sobel(src)
+        sy_x, sy_y = sobel(tgt)
+        return F.l1_loss(sx_x, sy_x) + F.l1_loss(sx_y, sy_y)
 
     def data_dependent_initialize(self, data):
         """
@@ -191,8 +216,16 @@ class CUTModel(BaseModel):
             loss_NCE_both = (self.loss_NCE + self.loss_NCE_Y) * 0.5
         else:
             loss_NCE_both = self.loss_NCE
+            
+        if self.opt.lambda_SSIM > 0:
+            self.loss_SSIM = self.compute_ssim_loss(self.real_A, self.fake_B) * self.opt.lambda_SSIM
 
-        self.loss_G = self.loss_G_GAN + loss_NCE_both
+        if self.opt.lambda_grad > 0:
+            self.loss_Grad = self.sobel_grad_loss(self.real_A, self.fake_B) * self.opt.lambda_grad
+                    
+        self.loss_Idt = self.criterionIdt(self.real_B, self.idt_B)
+
+        self.loss_G = self.loss_G_GAN + loss_NCE_both + self.loss_SSIM + self.loss_Grad
         return self.loss_G
 
     def calculate_NCE_loss(self, src, tgt):
@@ -203,8 +236,8 @@ class CUTModel(BaseModel):
             feat_q = [torch.flip(fq, [3]) for fq in feat_q]
 
         feat_k = self.netG(src, self.nce_layers, encode_only=True)
-        feat_k_pool, sample_ids = self.netF(feat_k, self.opt.num_patches, None)
-        feat_q_pool, _ = self.netF(feat_q, self.opt.num_patches, sample_ids)
+        feat_k_pool, sample_ids = self.netF(feat_k, self.opt.num_patches, None, src)
+        feat_q_pool, _ = self.netF(feat_q, self.opt.num_patches, sample_ids, src)
 
         total_nce_loss = 0.0
         for f_q, f_k, crit, nce_layer in zip(feat_q_pool, feat_k_pool, self.criterionNCE, self.nce_layers):

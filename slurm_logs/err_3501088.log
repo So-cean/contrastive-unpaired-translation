@@ -1,0 +1,5 @@
+
+CondaError: Run 'conda init' before 'conda activate'
+
+  File "predict_monai.py", line 4
+SyntaxError: Non-ASCII character '\xe5' in file predict_monai.py on line 5, but no encoding declared; see http://www.python.org/peps/pep-0263.html for details

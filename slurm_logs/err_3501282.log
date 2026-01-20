@@ -1,0 +1,14 @@
+
+CondaError: Run 'conda init' before 'conda activate'
+
+monai.transforms.spatial.dictionary Orientationd.__init__:labels: Current default value of argument `labels=(('L', 'R'), ('P', 'A'), ('I', 'S'))` was changed in version None from `labels=(('L', 'R'), ('P', 'A'), ('I', 'S'))` to `labels=None`. Default value changed to None meaning that the transform now uses the 'space' of a meta-tensor, if applicable, to determine appropriate axis labels.
+Traceback (most recent call last):
+  File "/public_bme2/bme-wangqian2/songhy2024/contrastive-unpaired-translation/predict_monai.py", line 53, in <module>
+    tester.test_volumes()
+  File "/public_bme2/bme-wangqian2/songhy2024/contrastive-unpaired-translation/test_monai.py", line 197, in test_volumes
+    processed_slices, slice_indices, original_shape, processed_data = self.processor.process_volume_to_slices(
+                                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/public_bme2/bme-wangqian2/songhy2024/contrastive-unpaired-translation/test_monai.py", line 68, in process_volume_to_slices
+    slice_indices = list(range(num_slices))
+                               ^^^^^^^^^^
+UnboundLocalError: cannot access local variable 'num_slices' where it is not associated with a value

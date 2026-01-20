@@ -1,0 +1,44 @@
+
+CondaError: Run 'conda init' before 'conda activate'
+
+monai.transforms.spatial.dictionary Orientationd.__init__:labels: Current default value of argument `labels=(('L', 'R'), ('P', 'A'), ('I', 'S'))` was changed in version None from `labels=(('L', 'R'), ('P', 'A'), ('I', 'S'))` to `labels=None`. Default value changed to None meaning that the transform now uses the 'space' of a meta-tensor, if applicable, to determine appropriate axis labels.
+Traceback (most recent call last):
+  File "/public_bme2/bme-wangqian2/songhy2024/contrastive-unpaired-translation/predict_monai.py", line 53, in <module>
+    tester.test_volumes()
+  File "/public_bme2/bme-wangqian2/songhy2024/contrastive-unpaired-translation/test_monai.py", line 219, in test_volumes
+    fake_output = gen(model_input.to(self.model.device))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home_data/home/songhy2024/miniconda3/envs/kaolin/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home_data/home/songhy2024/miniconda3/envs/kaolin/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/public_bme2/bme-wangqian2/songhy2024/contrastive-unpaired-translation/models/networks.py", line 1009, in forward
+    fake = self.model(input)
+           ^^^^^^^^^^^^^^^^^
+  File "/home_data/home/songhy2024/miniconda3/envs/kaolin/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home_data/home/songhy2024/miniconda3/envs/kaolin/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home_data/home/songhy2024/miniconda3/envs/kaolin/lib/python3.12/site-packages/torch/nn/modules/container.py", line 250, in forward
+    input = module(input)
+            ^^^^^^^^^^^^^
+  File "/home_data/home/songhy2024/miniconda3/envs/kaolin/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home_data/home/songhy2024/miniconda3/envs/kaolin/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/public_bme2/bme-wangqian2/songhy2024/contrastive-unpaired-translation/models/networks.py", line 60, in forward
+    return F.conv2d(self.pad(inp), self.filt, stride=self.stride, groups=inp.shape[1])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home_data/home/songhy2024/miniconda3/envs/kaolin/lib/python3.12/site-packages/monai/data/meta_tensor.py", line 283, in __torch_function__
+    ret = super().__torch_function__(func, types, args, kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home_data/home/songhy2024/miniconda3/envs/kaolin/lib/python3.12/site-packages/torch/_tensor.py", line 1648, in __torch_function__
+    ret = func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Given groups=256, expected weight to be at least 256 at dimension 0, but got weight of size [192, 1, 3, 3] instead

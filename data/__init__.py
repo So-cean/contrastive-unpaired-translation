@@ -13,6 +13,7 @@ See our template dataset class 'template_dataset.py' for more details.
 import importlib
 import torch.utils.data
 from data.base_dataset import BaseDataset
+import torch
 
 
 def find_dataset_using_name(dataset_name):
@@ -72,16 +73,32 @@ class CustomDatasetDataLoader():
         dataset_class = find_dataset_using_name(opt.dataset_mode)
         self.dataset = dataset_class(opt)
         print("dataset [%s] was created" % type(self.dataset).__name__)
+
+        # Use DistributedSampler when running under torch.distributed
+        self.sampler = None
+        if torch.distributed.is_available() and torch.distributed.is_initialized():
+            try:
+                self.sampler = torch.utils.data.distributed.DistributedSampler(self.dataset, shuffle=(not opt.serial_batches))
+            except Exception:
+                self.sampler = None
+
         self.dataloader = torch.utils.data.DataLoader(
             self.dataset,
             batch_size=opt.batch_size,
-            shuffle=not opt.serial_batches,
+            shuffle=(self.sampler is None and not opt.serial_batches),
+            sampler=self.sampler,
             num_workers=int(opt.num_threads),
             drop_last=True if opt.isTrain else False,
         )
 
     def set_epoch(self, epoch):
         self.dataset.current_epoch = epoch
+        if self.sampler is not None:
+            # DistributedSampler needs to know the epoch for shuffling
+            try:
+                self.sampler.set_epoch(epoch)
+            except Exception:
+                pass
 
     def load_data(self):
         return self

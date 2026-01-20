@@ -1,0 +1,3295 @@
+----------------- Options ---------------
+                 CUT_mode: CUT                           
+               batch_size: 16                            	[default: 1]
+          checkpoints_dir: ./checkpoints                 
+                crop_size: 256                           
+                 csv_path: data.csv                      
+                 dataroot: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/	[default: placeholder]
+             dataset_mode: monai                         	[default: unaligned]
+                direction: AtoB                          
+          display_winsize: 256                           
+               easy_label: experiment_name               
+                    epoch: latest                        
+                     eval: False                         
+        flip_equivariance: False                         
+                  gpu_ids: 0                             
+                init_gain: 0.02                          
+                init_type: xavier                        
+                 input_nc: 1                             	[default: 3]
+                  isTrain: False                         	[default: None]
+               lambda_GAN: 1.0                           
+               lambda_NCE: 1.0                           
+              lambda_SSIM: 1.0                           
+              lambda_grad: 0.5                           
+                load_size: 256                           
+         max_dataset_size: inf                           
+                    model: cut                           
+               n_layers_D: 3                             
+                     name: CUT_monai_K2E2                	[default: experiment_name]
+                    nce_T: 0.07                          
+                  nce_idt: True                          
+nce_includes_all_negatives_from_minibatch: False                         
+               nce_layers: 0,4,8,12,16                   
+                      ndf: 64                            
+                     netD: basic                         
+                     netF: mlp_sample                    
+                  netF_nc: 256                           
+                     netG: resnet_9blocks                
+                      ngf: 96                            	[default: 64]
+             no_antialias: False                         
+          no_antialias_up: False                         
+               no_dropout: True                          
+                  no_flip: True                          	[default: False]
+                    normD: instance                      
+                    normG: instance                      
+              num_patches: 256                           
+                 num_test: 50                            
+              num_threads: 4                             
+                output_nc: 1                             	[default: 3]
+                    phase: all                           	[default: test]
+                pool_size: 0                             
+               preprocess: scale_width_and_crop          	[default: resize_and_crop]
+         random_scale_max: 3.0                           
+              results_dir: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/	[default: ./results/]
+           serial_batches: False                         
+stylegan2_G_num_downsampling: 1                             
+                   suffix:                               
+                  verbose: False                         
+----------------- End -------------------
+
+===== Predicting phase: train =====
+Found 61 volumes for phase 'train' (set as num_test)
+model [CUTModel] was created
+loading the model from ./checkpoints/CUT_monai_K2E2/latest_net_G.pth
+---------- Networks initialized -------------
+[Network G] Total number of parameters : 25.564 M
+-----------------------------------------------
+Output directory: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest
+Processing 61 volumes from domain A
+Found 58 volumes in target domain B
+
+Processing volume 1/61: K_001_t1_skullstripped.nii.gz
+  Processed volume 'K_001_t1_skullstripped.nii.gz' to 37 slices.
+  Volume shape after processing: torch.Size([256, 256, 37])
+  processed image: torch.Size([1, 256, 256, 37])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/37 (z=0)
+  Processed slice 21/37 (z=20)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 4.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_001_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(4.0))
+  Shape: (256, 256, 37)
+  Affine diagonal: [1.000, 1.000, 4.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 4.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_001_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(4.0))
+  Shape: (256, 256, 37)
+  Affine diagonal: [1.000, 1.000, 4.000]
+
+Processing volume 2/61: K_003_t1_skullstripped.nii.gz
+  Processed volume 'K_003_t1_skullstripped.nii.gz' to 146 slices.
+  Volume shape after processing: torch.Size([256, 256, 146])
+  processed image: torch.Size([1, 256, 256, 146])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/146 (z=0)
+  Processed slice 21/146 (z=20)
+  Processed slice 41/146 (z=40)
+  Processed slice 61/146 (z=60)
+  Processed slice 81/146 (z=80)
+  Processed slice 101/146 (z=100)
+  Processed slice 121/146 (z=120)
+  Processed slice 141/146 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_003_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 146)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_003_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 146)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 3/61: K_005_t1_skullstripped.nii.gz
+  Processed volume 'K_005_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_005_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_005_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 4/61: K_006_t1_skullstripped.nii.gz
+  Processed volume 'K_006_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_006_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_006_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 5/61: K_007_t1_skullstripped.nii.gz
+  Processed volume 'K_007_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_007_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_007_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 6/61: K_008_t1_skullstripped.nii.gz
+  Processed volume 'K_008_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_008_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_008_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 7/61: K_009_t1_skullstripped.nii.gz
+  Processed volume 'K_009_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_009_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_009_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 8/61: K_011_t1_skullstripped.nii.gz
+  Processed volume 'K_011_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_011_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_011_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 9/61: K_012_t1_skullstripped.nii.gz
+  Processed volume 'K_012_t1_skullstripped.nii.gz' to 152 slices.
+  Volume shape after processing: torch.Size([256, 256, 152])
+  processed image: torch.Size([1, 256, 256, 152])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/152 (z=0)
+  Processed slice 21/152 (z=20)
+  Processed slice 41/152 (z=40)
+  Processed slice 61/152 (z=60)
+  Processed slice 81/152 (z=80)
+  Processed slice 101/152 (z=100)
+  Processed slice 121/152 (z=120)
+  Processed slice 141/152 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_012_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 152)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_012_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 152)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 10/61: K_013_t1_skullstripped.nii.gz
+  Processed volume 'K_013_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_013_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_013_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 11/61: K_014_t1_skullstripped.nii.gz
+  Processed volume 'K_014_t1_skullstripped.nii.gz' to 126 slices.
+  Volume shape after processing: torch.Size([256, 256, 126])
+  processed image: torch.Size([1, 256, 256, 126])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/126 (z=0)
+  Processed slice 21/126 (z=20)
+  Processed slice 41/126 (z=40)
+  Processed slice 61/126 (z=60)
+  Processed slice 81/126 (z=80)
+  Processed slice 101/126 (z=100)
+  Processed slice 121/126 (z=120)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_014_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 126)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_014_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 126)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 12/61: K_015_t1_skullstripped.nii.gz
+  Processed volume 'K_015_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_015_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_015_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 13/61: K_016_t1_skullstripped.nii.gz
+  Processed volume 'K_016_t1_skullstripped.nii.gz' to 128 slices.
+  Volume shape after processing: torch.Size([256, 256, 128])
+  processed image: torch.Size([1, 256, 256, 128])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/128 (z=0)
+  Processed slice 21/128 (z=20)
+  Processed slice 41/128 (z=40)
+  Processed slice 61/128 (z=60)
+  Processed slice 81/128 (z=80)
+  Processed slice 101/128 (z=100)
+  Processed slice 121/128 (z=120)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_016_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 128)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_016_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 128)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 14/61: K_017_t1_skullstripped.nii.gz
+  Processed volume 'K_017_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_017_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_017_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 15/61: K_018_t1_skullstripped.nii.gz
+  Processed volume 'K_018_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_018_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_018_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 16/61: K_019_t1_skullstripped.nii.gz
+  Processed volume 'K_019_t1_skullstripped.nii.gz' to 146 slices.
+  Volume shape after processing: torch.Size([256, 256, 146])
+  processed image: torch.Size([1, 256, 256, 146])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/146 (z=0)
+  Processed slice 21/146 (z=20)
+  Processed slice 41/146 (z=40)
+  Processed slice 61/146 (z=60)
+  Processed slice 81/146 (z=80)
+  Processed slice 101/146 (z=100)
+  Processed slice 121/146 (z=120)
+  Processed slice 141/146 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_019_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 146)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_019_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 146)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 17/61: K_021_t1_skullstripped.nii.gz
+  Processed volume 'K_021_t1_skullstripped.nii.gz' to 168 slices.
+  Volume shape after processing: torch.Size([256, 256, 168])
+  processed image: torch.Size([1, 256, 256, 168])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/168 (z=0)
+  Processed slice 21/168 (z=20)
+  Processed slice 41/168 (z=40)
+  Processed slice 61/168 (z=60)
+  Processed slice 81/168 (z=80)
+  Processed slice 101/168 (z=100)
+  Processed slice 121/168 (z=120)
+  Processed slice 141/168 (z=140)
+  Processed slice 161/168 (z=160)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_021_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 168)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_021_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 168)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 18/61: K_022_t1_skullstripped.nii.gz
+  Processed volume 'K_022_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_022_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_022_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 19/61: K_023_t1_skullstripped.nii.gz
+  Processed volume 'K_023_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_023_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_023_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 20/61: K_024_t1_skullstripped.nii.gz
+  Processed volume 'K_024_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_024_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_024_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 21/61: K_026_t1_skullstripped.nii.gz
+  Processed volume 'K_026_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_026_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_026_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 22/61: K_027_t1_skullstripped.nii.gz
+  Processed volume 'K_027_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_027_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_027_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 23/61: K_028_t1_skullstripped.nii.gz
+  Processed volume 'K_028_t1_skullstripped.nii.gz' to 128 slices.
+  Volume shape after processing: torch.Size([256, 256, 128])
+  processed image: torch.Size([1, 256, 256, 128])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/128 (z=0)
+  Processed slice 21/128 (z=20)
+  Processed slice 41/128 (z=40)
+  Processed slice 61/128 (z=60)
+  Processed slice 81/128 (z=80)
+  Processed slice 101/128 (z=100)
+  Processed slice 121/128 (z=120)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_028_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 128)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_028_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 128)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 24/61: K_029_t1_skullstripped.nii.gz
+  Processed volume 'K_029_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_029_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_029_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 25/61: K_030_t1_skullstripped.nii.gz
+  Processed volume 'K_030_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_030_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_030_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 26/61: K_032_t1_skullstripped.nii.gz
+  Processed volume 'K_032_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_032_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_032_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 27/61: K_033_t1_skullstripped.nii.gz
+  Processed volume 'K_033_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_033_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_033_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 28/61: K_035_t1_skullstripped.nii.gz
+  Processed volume 'K_035_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_035_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_035_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 29/61: K_037_t1_skullstripped.nii.gz
+  Processed volume 'K_037_t1_skullstripped.nii.gz' to 146 slices.
+  Volume shape after processing: torch.Size([256, 256, 146])
+  processed image: torch.Size([1, 256, 256, 146])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/146 (z=0)
+  Processed slice 21/146 (z=20)
+  Processed slice 41/146 (z=40)
+  Processed slice 61/146 (z=60)
+  Processed slice 81/146 (z=80)
+  Processed slice 101/146 (z=100)
+  Processed slice 121/146 (z=120)
+  Processed slice 141/146 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_037_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 146)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_037_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 146)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 30/61: K_038_t1_skullstripped.nii.gz
+  Processed volume 'K_038_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_038_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_038_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 31/61: K_039_t1_skullstripped.nii.gz
+  Processed volume 'K_039_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_039_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_039_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 32/61: K_040_t1_skullstripped.nii.gz
+  Processed volume 'K_040_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_040_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_040_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 33/61: K_041_t1_skullstripped.nii.gz
+  Processed volume 'K_041_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_041_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_041_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 34/61: K_044_t1_skullstripped.nii.gz
+  Processed volume 'K_044_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_044_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_044_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 35/61: K_046_t1_skullstripped.nii.gz
+  Processed volume 'K_046_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_046_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_046_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 36/61: K_048_t1_skullstripped.nii.gz
+  Processed volume 'K_048_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_048_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_048_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 37/61: K_050_t1_skullstripped.nii.gz
+  Processed volume 'K_050_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_050_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_050_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 38/61: K_053_t1_skullstripped.nii.gz
+  Processed volume 'K_053_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_053_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_053_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 39/61: K_055_t1_skullstripped.nii.gz
+  Processed volume 'K_055_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_055_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_055_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 40/61: K_057_t1_skullstripped.nii.gz
+  Processed volume 'K_057_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_057_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_057_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 41/61: K_058_t1_skullstripped.nii.gz
+  Processed volume 'K_058_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_058_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_058_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 42/61: K_059_t1_skullstripped.nii.gz
+  Processed volume 'K_059_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_059_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_059_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 43/61: K_061_t1_skullstripped.nii.gz
+  Processed volume 'K_061_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_061_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_061_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 44/61: K_062_t1_skullstripped.nii.gz
+  Processed volume 'K_062_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_062_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_062_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 45/61: K_063_t1_skullstripped.nii.gz
+  Processed volume 'K_063_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_063_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_063_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 46/61: K_064_t1_skullstripped.nii.gz
+  Processed volume 'K_064_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_064_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_064_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 47/61: K_065_t1_skullstripped.nii.gz
+  Processed volume 'K_065_t1_skullstripped.nii.gz' to 146 slices.
+  Volume shape after processing: torch.Size([256, 256, 146])
+  processed image: torch.Size([1, 256, 256, 146])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/146 (z=0)
+  Processed slice 21/146 (z=20)
+  Processed slice 41/146 (z=40)
+  Processed slice 61/146 (z=60)
+  Processed slice 81/146 (z=80)
+  Processed slice 101/146 (z=100)
+  Processed slice 121/146 (z=120)
+  Processed slice 141/146 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_065_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 146)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_065_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 146)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 48/61: K_066_t1_skullstripped.nii.gz
+  Processed volume 'K_066_t1_skullstripped.nii.gz' to 158 slices.
+  Volume shape after processing: torch.Size([256, 256, 158])
+  processed image: torch.Size([1, 256, 256, 158])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/158 (z=0)
+  Processed slice 21/158 (z=20)
+  Processed slice 41/158 (z=40)
+  Processed slice 61/158 (z=60)
+  Processed slice 81/158 (z=80)
+  Processed slice 101/158 (z=100)
+  Processed slice 121/158 (z=120)
+  Processed slice 141/158 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_066_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 158)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_066_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 158)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 49/61: K_067_t1_skullstripped.nii.gz
+  Processed volume 'K_067_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_067_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_067_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 50/61: K_068_t1_skullstripped.nii.gz
+  Processed volume 'K_068_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_068_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_068_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 51/61: K_069_t1_skullstripped.nii.gz
+  Processed volume 'K_069_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_069_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_069_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 52/61: K_072_t1_skullstripped.nii.gz
+  Processed volume 'K_072_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_072_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_072_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 53/61: K_073_t1_skullstripped.nii.gz
+  Processed volume 'K_073_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_073_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_073_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 54/61: K_075_t1_skullstripped.nii.gz
+  Processed volume 'K_075_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_075_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_075_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 55/61: K_079_t1_skullstripped.nii.gz
+  Processed volume 'K_079_t1_skullstripped.nii.gz' to 140 slices.
+  Volume shape after processing: torch.Size([256, 256, 140])
+  processed image: torch.Size([1, 256, 256, 140])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/140 (z=0)
+  Processed slice 21/140 (z=20)
+  Processed slice 41/140 (z=40)
+  Processed slice 61/140 (z=60)
+  Processed slice 81/140 (z=80)
+  Processed slice 101/140 (z=100)
+  Processed slice 121/140 (z=120)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_079_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 140)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_079_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 140)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 56/61: K_081_t1_skullstripped.nii.gz
+  Processed volume 'K_081_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_081_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_081_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 57/61: K_082_t1_skullstripped.nii.gz
+  Processed volume 'K_082_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_082_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_082_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 58/61: K_083_t1_skullstripped.nii.gz
+  Processed volume 'K_083_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_083_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_083_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 59/61: K_084_t1_skullstripped.nii.gz
+  Processed volume 'K_084_t1_skullstripped.nii.gz' to 37 slices.
+  Volume shape after processing: torch.Size([256, 256, 37])
+  processed image: torch.Size([1, 256, 256, 37])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/37 (z=0)
+  Processed slice 21/37 (z=20)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 4.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_084_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(4.0))
+  Shape: (256, 256, 37)
+  Affine diagonal: [1.000, 1.000, 4.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 4.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_084_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(4.0))
+  Shape: (256, 256, 37)
+  Affine diagonal: [1.000, 1.000, 4.000]
+
+Processing volume 60/61: K_085_t1_skullstripped.nii.gz
+  Processed volume 'K_085_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_085_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_085_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 61/61: K_086_t1_skullstripped.nii.gz
+  Processed volume 'K_086_t1_skullstripped.nii.gz' to 152 slices.
+  Volume shape after processing: torch.Size([256, 256, 152])
+  processed image: torch.Size([1, 256, 256, 152])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/152 (z=0)
+  Processed slice 21/152 (z=20)
+  Processed slice 41/152 (z=40)
+  Processed slice 61/152 (z=60)
+  Processed slice 81/152 (z=80)
+  Processed slice 101/152 (z=100)
+  Processed slice 121/152 (z=120)
+  Processed slice 141/152 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_086_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 152)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/K_086_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 152)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing target domain volumes (B) for reference...
+Processing target volume 1: E_001_t1_skullstripped.nii.gz
+  Processed volume 'E_001_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_001_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(5.9999986))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.970, 0.960, 5.937]
+Processing target volume 2: E_002_t1_skullstripped.nii.gz
+  Processed volume 'E_002_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_002_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(5.999998))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.994, 0.988, 5.945]
+Processing target volume 3: E_003_t1_skullstripped.nii.gz
+  Processed volume 'E_003_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 7.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_003_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(7.0000005))
+  Shape: (256, 256, 18)
+  Affine diagonal: [1.000, 0.990, 6.932]
+Processing target volume 4: E_004_t1_skullstripped.nii.gz
+  Processed volume 'E_004_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.6000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_004_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.6000004))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.989, 0.931, 6.185]
+Processing target volume 5: E_005_t1_skullstripped.nii.gz
+  Processed volume 'E_005_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_005_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0000005))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.985, 0.991, 5.858]
+Processing target volume 6: E_006_t1_skullstripped.nii.gz
+  Processed volume 'E_006_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_006_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0000024))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.997, 0.990, 5.921]
+Processing target volume 7: E_008_t1_skullstripped.nii.gz
+  Processed volume 'E_008_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_008_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(5.999997))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.995, 0.979, 5.879]
+Processing target volume 8: E_011_t1_skullstripped.nii.gz
+  Processed volume 'E_011_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_011_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0000005))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.972, 0.972, 5.997]
+Processing target volume 9: E_013_t1_skullstripped.nii.gz
+  Processed volume 'E_013_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_013_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0000033))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.989, 0.987, 5.979]
+Processing target volume 10: E_017_t1_skullstripped.nii.gz
+  Processed volume 'E_017_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_017_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.000003))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.978, 0.963, 5.888]
+Processing target volume 11: E_018_t1_skullstripped.nii.gz
+  Processed volume 'E_018_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_018_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(5.999997))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.986, 0.924, 5.627]
+Processing target volume 12: E_028_t1_skullstripped.nii.gz
+  Processed volume 'E_028_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.6000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_028_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.5999985))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.999, 0.997, 6.577]
+Processing target volume 13: E_029_t1_skullstripped.nii.gz
+  Processed volume 'E_029_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_029_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(5.999998))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.980, 0.974, 5.957]
+Processing target volume 14: E_031_t1_skullstripped.nii.gz
+  Processed volume 'E_031_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_031_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.000001))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.986, 0.956, 5.813]
+Processing target volume 15: E_035_t1_skullstripped.nii.gz
+  Processed volume 'E_035_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.6000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_035_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.599999))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.978, 0.949, 6.345]
+Processing target volume 16: E_040_t1_skullstripped.nii.gz
+  Processed volume 'E_040_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_040_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.995, 0.978, 5.891]
+Processing target volume 17: E_050_t1_skullstripped.nii.gz
+  Processed volume 'E_050_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_050_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0000024))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.995, 0.994, 5.992]
+Processing target volume 18: E_054_t1_skullstripped.nii.gz
+  Processed volume 'E_054_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_054_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(5.9999986))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.999, 0.982, 5.896]
+Processing target volume 19: E_055_t1_skullstripped.nii.gz
+  Processed volume 'E_055_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_055_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.000001))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.988, 0.974, 5.868]
+Processing target volume 20: E_056_t1_skullstripped.nii.gz
+  Processed volume 'E_056_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_056_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0000024))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.998, 0.906, 5.428]
+Processing target volume 21: E_057_t1_skullstripped.nii.gz
+  Processed volume 'E_057_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_057_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0000043))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.996, 0.929, 5.598]
+Processing target volume 22: E_058_t1_skullstripped.nii.gz
+  Processed volume 'E_058_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_058_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0000005))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.995, 0.977, 5.868]
+Processing target volume 23: E_059_t1_skullstripped.nii.gz
+  Processed volume 'E_059_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_059_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0000005))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.972, 0.913, 5.549]
+Processing target volume 24: E_060_t1_skullstripped.nii.gz
+  Processed volume 'E_060_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_060_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0000043))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.962, 0.936, 5.810]
+Processing target volume 25: E_061_t1_skullstripped.nii.gz
+  Processed volume 'E_061_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_061_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.000001))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.995, 0.996, 5.968]
+Processing target volume 26: E_066_t1_skullstripped.nii.gz
+  Processed volume 'E_066_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_066_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.000002))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.995, 0.961, 5.794]
+Processing target volume 27: E_068_t1_skullstripped.nii.gz
+  Processed volume 'E_068_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_068_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0000014))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.999, 0.949, 5.699]
+Processing target volume 28: E_069_t1_skullstripped.nii.gz
+  Processed volume 'E_069_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 7.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_069_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.999999))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.999, 0.921, 6.441]
+Processing target volume 29: E_070_t1_skullstripped.nii.gz
+  Processed volume 'E_070_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_070_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.000001))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.990, 0.979, 5.926]
+Processing target volume 30: E_077_t1_skullstripped.nii.gz
+  Processed volume 'E_077_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_077_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0000033))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.991, 0.930, 5.629]
+Processing target volume 31: E_078_t1_skullstripped.nii.gz
+  Processed volume 'E_078_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_078_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0000005))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.984, 0.935, 5.673]
+Processing target volume 32: E_079_t1_skullstripped.nii.gz
+  Processed volume 'E_079_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 7.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_079_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(7.0000005))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.998, 0.994, 6.937]
+Processing target volume 33: E_081_t1_skullstripped.nii.gz
+  Processed volume 'E_081_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_081_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(5.999999))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.992, 0.965, 5.767]
+Processing target volume 34: E_082_t1_skullstripped.nii.gz
+  Processed volume 'E_082_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.6000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_082_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.599997))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.999, 0.926, 6.113]
+Processing target volume 35: E_086_t1_skullstripped.nii.gz
+  Processed volume 'E_086_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_086_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(5.9999976))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.996, 0.970, 5.840]
+Processing target volume 36: E_088_t1_skullstripped.nii.gz
+  Processed volume 'E_088_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_088_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(5.9999976))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.986, 0.896, 5.449]
+Processing target volume 37: E_090_t1_skullstripped.nii.gz
+  Processed volume 'E_090_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_090_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.995, 0.969, 5.843]
+Processing target volume 38: E_092_t1_skullstripped.nii.gz
+  Processed volume 'E_092_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_092_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(5.9999995))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.985, 0.968, 5.896]
+Processing target volume 39: E_094_t1_skullstripped.nii.gz
+  Processed volume 'E_094_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_094_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(5.999999))
+  Shape: (256, 256, 18)
+  Affine diagonal: [1.000, 0.992, 5.954]
+Processing target volume 40: E_103_t1_skullstripped.nii.gz
+  Processed volume 'E_103_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_103_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(5.9999976))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.980, 0.948, 5.804]
+Processing target volume 41: E_104_t1_skullstripped.nii.gz
+  Processed volume 'E_104_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_104_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(5.9999986))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.995, 0.987, 5.955]
+Processing target volume 42: E_105_t1_skullstripped.nii.gz
+  Processed volume 'E_105_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_105_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0000014))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.951, 0.943, 5.944]
+Processing target volume 43: E_108_t1_skullstripped.nii.gz
+  Processed volume 'E_108_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_108_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.975, 0.975, 5.998]
+Processing target volume 44: E_111_t1_skullstripped.nii.gz
+  Processed volume 'E_111_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_111_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.988, 0.984, 5.975]
+Processing target volume 45: E_113_t1_skullstripped.nii.gz
+  Processed volume 'E_113_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_113_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0000043))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.996, 0.987, 5.938]
+Processing target volume 46: E_114_t1_skullstripped.nii.gz
+  Processed volume 'E_114_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_114_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0000043))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.986, 0.914, 5.557]
+Processing target volume 47: E_116_t1_skullstripped.nii.gz
+  Processed volume 'E_116_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_116_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(5.999997))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.983, 0.898, 5.465]
+Processing target volume 48: E_117_t1_skullstripped.nii.gz
+  Processed volume 'E_117_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_117_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0000005))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.992, 0.958, 5.791]
+Processing target volume 49: E_119_t1_skullstripped.nii.gz
+  Processed volume 'E_119_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_119_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(5.9999957))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.993, 0.949, 5.683]
+Processing target volume 50: E_123_t1_skullstripped.nii.gz
+  Processed volume 'E_123_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_123_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(5.9999986))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.995, 0.977, 5.894]
+Processing target volume 51: E_154_t1_skullstripped.nii.gz
+  Processed volume 'E_154_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_154_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.942, 0.937, 5.964]
+Processing target volume 52: E_155_t1_skullstripped.nii.gz
+  Processed volume 'E_155_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_155_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.983, 0.921, 5.625]
+Processing target volume 53: E_160_t1_skullstripped.nii.gz
+  Processed volume 'E_160_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_160_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.997, 0.960, 5.776]
+Processing target volume 54: E_162_t1_skullstripped.nii.gz
+  Processed volume 'E_162_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_162_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0000005))
+  Shape: (256, 256, 18)
+  Affine diagonal: [1.000, 0.951, 5.705]
+Processing target volume 55: E_166_t1_skullstripped.nii.gz
+  Processed volume 'E_166_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_166_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.980, 0.971, 5.873]
+Processing target volume 56: E_175_t1_skullstripped.nii.gz
+  Processed volume 'E_175_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_175_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.996, 0.912, 5.496]
+Processing target volume 57: E_178_t1_skullstripped.nii.gz
+  Processed volume 'E_178_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_178_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.983, 0.942, 5.675]
+Processing target volume 58: E_179_t1_skullstripped.nii.gz
+  Processed volume 'E_179_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest/E_179_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.969, 0.931, 5.765]
+
+Processing completed! Results saved to: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/train_latest
+Saved harmonization results (fake_B), source domain (real_A), and target domain (real_B) volumes.
+All volumes use the same preprocessing as training dataset.
+
+===== Predicting phase: val =====
+Found 9 volumes for phase 'val' (set as num_test)
+model [CUTModel] was created
+loading the model from ./checkpoints/CUT_monai_K2E2/latest_net_G.pth
+---------- Networks initialized -------------
+[Network G] Total number of parameters : 25.564 M
+-----------------------------------------------
+Output directory: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/val_latest
+Processing 9 volumes from domain A
+Found 8 volumes in target domain B
+
+Processing volume 1/9: K_002_t1_skullstripped.nii.gz
+  Processed volume 'K_002_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/val_latest/K_002_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/val_latest/K_002_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 2/9: K_004_t1_skullstripped.nii.gz
+  Processed volume 'K_004_t1_skullstripped.nii.gz' to 134 slices.
+  Volume shape after processing: torch.Size([256, 256, 134])
+  processed image: torch.Size([1, 256, 256, 134])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/134 (z=0)
+  Processed slice 21/134 (z=20)
+  Processed slice 41/134 (z=40)
+  Processed slice 61/134 (z=60)
+  Processed slice 81/134 (z=80)
+  Processed slice 101/134 (z=100)
+  Processed slice 121/134 (z=120)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/val_latest/K_004_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 134)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/val_latest/K_004_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 134)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 3/9: K_042_t1_skullstripped.nii.gz
+  Processed volume 'K_042_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/val_latest/K_042_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/val_latest/K_042_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 4/9: K_045_t1_skullstripped.nii.gz
+  Processed volume 'K_045_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/val_latest/K_045_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/val_latest/K_045_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 5/9: K_054_t1_skullstripped.nii.gz
+  Processed volume 'K_054_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/val_latest/K_054_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/val_latest/K_054_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 6/9: K_070_t1_skullstripped.nii.gz
+  Processed volume 'K_070_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/val_latest/K_070_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/val_latest/K_070_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 7/9: K_074_t1_skullstripped.nii.gz
+  Processed volume 'K_074_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/val_latest/K_074_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/val_latest/K_074_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 8/9: K_078_t1_skullstripped.nii.gz
+  Processed volume 'K_078_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/val_latest/K_078_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/val_latest/K_078_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 9/9: K_088_t1_skullstripped.nii.gz
+  Processed volume 'K_088_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/val_latest/K_088_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/val_latest/K_088_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing target domain volumes (B) for reference...
+Processing target volume 1: E_010_t1_skullstripped.nii.gz
+  Processed volume 'E_010_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/val_latest/E_010_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.000001))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.999, 0.984, 5.895]
+Processing target volume 2: E_037_t1_skullstripped.nii.gz
+  Processed volume 'E_037_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/val_latest/E_037_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0000043))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.998, 0.930, 5.568]
+Processing target volume 3: E_062_t1_skullstripped.nii.gz
+  Processed volume 'E_062_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/val_latest/E_062_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0000033))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.997, 0.964, 5.786]
+Processing target volume 4: E_083_t1_skullstripped.nii.gz
+  Processed volume 'E_083_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/val_latest/E_083_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.989, 0.988, 5.995]
+Processing target volume 5: E_095_t1_skullstripped.nii.gz
+  Processed volume 'E_095_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/val_latest/E_095_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.994, 0.971, 5.860]
+Processing target volume 6: E_100_t1_skullstripped.nii.gz
+  Processed volume 'E_100_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/val_latest/E_100_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0000014))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.995, 0.997, 5.968]
+Processing target volume 7: E_101_t1_skullstripped.nii.gz
+  Processed volume 'E_101_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/val_latest/E_101_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0000005))
+  Shape: (256, 256, 18)
+  Affine diagonal: [1.000, 0.997, 5.982]
+Processing target volume 8: E_181_t1_skullstripped.nii.gz
+  Processed volume 'E_181_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/val_latest/E_181_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.998, 0.993, 5.949]
+
+Processing completed! Results saved to: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/val_latest
+Saved harmonization results (fake_B), source domain (real_A), and target domain (real_B) volumes.
+All volumes use the same preprocessing as training dataset.
+
+===== Predicting phase: test =====
+Found 18 volumes for phase 'test' (set as num_test)
+model [CUTModel] was created
+loading the model from ./checkpoints/CUT_monai_K2E2/latest_net_G.pth
+---------- Networks initialized -------------
+[Network G] Total number of parameters : 25.564 M
+-----------------------------------------------
+Output directory: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest
+Processing 18 volumes from domain A
+Found 17 volumes in target domain B
+
+Processing volume 1/18: K_010_t1_skullstripped.nii.gz
+  Processed volume 'K_010_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_010_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_010_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 2/18: K_020_t1_skullstripped.nii.gz
+  Processed volume 'K_020_t1_skullstripped.nii.gz' to 156 slices.
+  Volume shape after processing: torch.Size([256, 256, 156])
+  processed image: torch.Size([1, 256, 256, 156])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/156 (z=0)
+  Processed slice 21/156 (z=20)
+  Processed slice 41/156 (z=40)
+  Processed slice 61/156 (z=60)
+  Processed slice 81/156 (z=80)
+  Processed slice 101/156 (z=100)
+  Processed slice 121/156 (z=120)
+  Processed slice 141/156 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_020_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 156)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_020_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 156)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 3/18: K_025_t1_skullstripped.nii.gz
+  Processed volume 'K_025_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_025_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_025_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 4/18: K_031_t1_skullstripped.nii.gz
+  Processed volume 'K_031_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_031_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_031_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 5/18: K_034_t1_skullstripped.nii.gz
+  Processed volume 'K_034_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_034_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_034_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 6/18: K_036_t1_skullstripped.nii.gz
+  Processed volume 'K_036_t1_skullstripped.nii.gz' to 142 slices.
+  Volume shape after processing: torch.Size([256, 256, 142])
+  processed image: torch.Size([1, 256, 256, 142])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/142 (z=0)
+  Processed slice 21/142 (z=20)
+  Processed slice 41/142 (z=40)
+  Processed slice 61/142 (z=60)
+  Processed slice 81/142 (z=80)
+  Processed slice 101/142 (z=100)
+  Processed slice 121/142 (z=120)
+  Processed slice 141/142 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_036_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 142)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_036_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 142)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 7/18: K_043_t1_skullstripped.nii.gz
+  Processed volume 'K_043_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_043_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_043_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 8/18: K_047_t1_skullstripped.nii.gz
+  Processed volume 'K_047_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_047_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_047_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 9/18: K_049_t1_skullstripped.nii.gz
+  Processed volume 'K_049_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 1.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_049_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [0.975, 0.973, 0.963]
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 1.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_049_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [0.975, 0.973, 0.963]
+
+Processing volume 10/18: K_051_t1_skullstripped.nii.gz
+  Processed volume 'K_051_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_051_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_051_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 11/18: K_052_t1_skullstripped.nii.gz
+  Processed volume 'K_052_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_052_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_052_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 12/18: K_056_t1_skullstripped.nii.gz
+  Processed volume 'K_056_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_056_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_056_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 13/18: K_060_t1_skullstripped.nii.gz
+  Processed volume 'K_060_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_060_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_060_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 14/18: K_071_t1_skullstripped.nii.gz
+  Processed volume 'K_071_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_071_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_071_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 15/18: K_076_t1_skullstripped.nii.gz
+  Processed volume 'K_076_t1_skullstripped.nii.gz' to 136 slices.
+  Volume shape after processing: torch.Size([256, 256, 136])
+  processed image: torch.Size([1, 256, 256, 136])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/136 (z=0)
+  Processed slice 21/136 (z=20)
+  Processed slice 41/136 (z=40)
+  Processed slice 61/136 (z=60)
+  Processed slice 81/136 (z=80)
+  Processed slice 101/136 (z=100)
+  Processed slice 121/136 (z=120)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_076_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 136)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_076_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 136)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 16/18: K_077_t1_skullstripped.nii.gz
+  Processed volume 'K_077_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_077_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_077_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 17/18: K_080_t1_skullstripped.nii.gz
+  Processed volume 'K_080_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_080_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_080_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing volume 18/18: K_087_t1_skullstripped.nii.gz
+  Processed volume 'K_087_t1_skullstripped.nii.gz' to 148 slices.
+  Volume shape after processing: torch.Size([256, 256, 148])
+  processed image: torch.Size([1, 256, 256, 148])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+  Processed slice 1/148 (z=0)
+  Processed slice 21/148 (z=20)
+  Processed slice 41/148 (z=40)
+  Processed slice 61/148 (z=60)
+  Processed slice 81/148 (z=80)
+  Processed slice 101/148 (z=100)
+  Processed slice 121/148 (z=120)
+  Processed slice 141/148 (z=140)
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_087_t1_skullstripped_fake_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+Using processed affine from MONAI
+Using processed spacing: tensor([1., 1., 1.], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/K_087_t1_skullstripped_real_A.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(1.0))
+  Shape: (256, 256, 148)
+  Affine diagonal: [1.000, 1.000, 1.000]
+
+Processing target domain volumes (B) for reference...
+Processing target volume 1: E_030_t1_skullstripped.nii.gz
+  Processed volume 'E_030_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/E_030_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(5.9999976))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.981, 0.948, 5.754]
+Processing target volume 2: E_036_t1_skullstripped.nii.gz
+  Processed volume 'E_036_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/E_036_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(5.9999995))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.978, 0.966, 5.926]
+Processing target volume 3: E_051_t1_skullstripped.nii.gz
+  Processed volume 'E_051_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/E_051_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.000001))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.999, 0.900, 5.396]
+Processing target volume 4: E_071_t1_skullstripped.nii.gz
+  Processed volume 'E_071_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/E_071_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0000005))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.984, 0.968, 5.770]
+Processing target volume 5: E_072_t1_skullstripped.nii.gz
+  Processed volume 'E_072_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/E_072_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(5.999999))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.991, 0.978, 5.891]
+Processing target volume 6: E_075_t1_skullstripped.nii.gz
+  Processed volume 'E_075_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/E_075_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.000002))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.995, 0.938, 5.625]
+Processing target volume 7: E_080_t1_skullstripped.nii.gz
+  Processed volume 'E_080_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/E_080_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0000014))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.871, 0.867, 5.949]
+Processing target volume 8: E_084_t1_skullstripped.nii.gz
+  Processed volume 'E_084_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/E_084_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(5.9999986))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.998, 0.941, 5.657]
+Processing target volume 9: E_097_t1_skullstripped.nii.gz
+  Processed volume 'E_097_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.6000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/E_097_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.599998))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.997, 0.976, 6.428]
+Processing target volume 10: E_102_t1_skullstripped.nii.gz
+  Processed volume 'E_102_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/E_102_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(5.9999986))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.998, 0.964, 5.769]
+Processing target volume 11: E_109_t1_skullstripped.nii.gz
+  Processed volume 'E_109_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/E_109_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(5.9999986))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.993, 0.964, 5.828]
+Processing target volume 12: E_112_t1_skullstripped.nii.gz
+  Processed volume 'E_112_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/E_112_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(5.9999976))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.998, 0.911, 5.452]
+Processing target volume 13: E_167_t1_skullstripped.nii.gz
+  Processed volume 'E_167_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/E_167_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.991, 0.902, 5.392]
+Processing target volume 14: E_168_t1_skullstripped.nii.gz
+  Processed volume 'E_168_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/E_168_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.995, 0.966, 5.824]
+Processing target volume 15: E_176_t1_skullstripped.nii.gz
+  Processed volume 'E_176_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/E_176_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.980, 0.931, 5.706]
+Processing target volume 16: E_180_t1_skullstripped.nii.gz
+  Processed volume 'E_180_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/E_180_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.995, 0.966, 5.824]
+Processing target volume 17: E_183_t1_skullstripped.nii.gz
+  Processed volume 'E_183_t1_skullstripped.nii.gz' to 18 slices.
+  Volume shape after processing: torch.Size([256, 256, 18])
+  processed image: torch.Size([1, 256, 256, 18])
+  processed_slices[0] shape: torch.Size([1, 256, 256])
+Using processed affine from MONAI
+Using processed spacing: tensor([1.0000, 1.0000, 6.0000], dtype=torch.float64)
+Saved: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest/E_183_t1_skullstripped_real_B.nii.gz
+  Final spacing: (np.float32(1.0), np.float32(1.0), np.float32(6.0))
+  Shape: (256, 256, 18)
+  Affine diagonal: [0.944, 0.953, 5.921]
+
+Processing completed! Results saved to: /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/K2E2_pred/CUT_monai_K2E2/test_latest
+Saved harmonization results (fake_B), source domain (real_A), and target domain (real_B) volumes.
+All volumes use the same preprocessing as training dataset.
+
+All phases completed.

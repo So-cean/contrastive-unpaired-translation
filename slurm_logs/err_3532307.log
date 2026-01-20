@@ -1,0 +1,16 @@
+
+CondaError: Run 'conda init' before 'conda activate'
+
+Traceback (most recent call last):
+  File "/public_bme2/bme-wangqian2/songhy2024/contrastive-unpaired-translation/train.py", line 11, in <module>
+    dataset = create_dataset(opt)  # create a dataset given opt.dataset_mode and other options
+              ^^^^^^^^^^^^^^^^^^^
+  File "/public_bme2/bme-wangqian2/songhy2024/contrastive-unpaired-translation/data/__init__.py", line 57, in create_dataset
+    data_loader = CustomDatasetDataLoader(opt)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/public_bme2/bme-wangqian2/songhy2024/contrastive-unpaired-translation/data/__init__.py", line 73, in __init__
+    self.dataset = dataset_class(opt)
+                   ^^^^^^^^^^^^^^^^^^
+  File "/public_bme2/bme-wangqian2/songhy2024/contrastive-unpaired-translation/data/monai_dataset.py", line 64, in __init__
+    raise ValueError(f"No .nii.gz files found in {self.dir_A}")
+ValueError: No .nii.gz files found in /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/trainA

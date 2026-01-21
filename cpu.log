@@ -1,22 +1,21 @@
-Wed Jan 21 16:00:36 CST 2026
-top - 16:00:37 up 373 days, 16:39,  2 users,  load average: 82.45, 65.33, 53.01
-Tasks: 1969 total,   2 running, 1967 sleeping,   0 stopped,   0 zombie
-%Cpu(s):  0.9 us,  0.1 sy,  0.0 ni, 99.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
-MiB Mem : 1045781.+total, 502062.6 free,  35224.9 used, 508493.6 buff/cache
-MiB Swap:  55295.9 total,  32812.7 free,  22483.2 used. 864857.7 avail Mem 
+Wed Jan 21 16:01:19 CST 2026
+top - 16:01:19 up 373 days, 16:39,  2 users,  load average: 68.85, 64.33, 53.22
+Tasks: 1965 total,   2 running, 1963 sleeping,   0 stopped,   0 zombie
+%Cpu(s):  0.5 us,  0.2 sy,  0.0 ni, 99.3 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+MiB Mem : 1045781.+total, 502177.6 free,  35109.9 used, 508493.6 buff/cache
+MiB Swap:  55295.9 total,  32812.7 free,  22483.2 used. 864972.7 avail Mem 
 
     PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
-4174244 songhy2+  20   0 8222.0g   7.7g 769024 R  78.3   0.8 168:27.32 python
-4175555 songhy2+  20   0  243648  16704   5440 R  13.0   0.0   0:00.07 top
- 428562 root      -2   0       0      0      0 D   4.3   0.0   1663:44 dev3_sq_task
-      1 root      20   0  194176   9920   4864 S   0.0   0.0  46:25.12 systemd
+4174244 songhy2+  20   0 8221.9g   7.6g 769024 R  78.3   0.7 223:59.30 python
+4175776 songhy2+  20   0  243648  16704   5440 R  13.0   0.0   0:00.06 top
+      1 root      20   0  194176   9920   4864 S   0.0   0.0  46:25.13 systemd
       2 root      20   0       0      0      0 S   0.0   0.0   1:54.81 kthreadd
       3 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 rcu_gp
       4 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 rcu_par_gp
       6 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker/0:0H-events_highpri
       9 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 mm_percpu_wq
      10 root      20   0       0      0      0 S   0.0   0.0 591:17.24 ksoftirqd/0
-     11 root      20   0       0      0      0 I   0.0   0.0 390:46.10 rcu_sched
+     11 root      20   0       0      0      0 I   0.0   0.0 390:46.16 rcu_sched
      12 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_bh
      13 root      rt   0       0      0      0 S   0.0   0.0   0:23.10 migration/0
      14 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/0
@@ -31,3 +30,4 @@ MiB Swap:  55295.9 total,  32812.7 free,  22483.2 used. 864857.7 avail Mem
      25 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/3
      26 root      rt   0       0      0      0 S   0.0   0.0   0:19.05 migration/3
      27 root      20   0       0      0      0 S   0.0   0.0   6:07.50 ksoftirqd/3
+     29 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker/3:0H-events_highpri

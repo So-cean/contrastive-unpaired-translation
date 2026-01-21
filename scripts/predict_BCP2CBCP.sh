@@ -15,4 +15,5 @@ cd /public_bme2/bme-wangqian2/songhy2024/contrastive-unpaired-translation
 python predict_monai.py --dataroot /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/BCP2CBCP/ \
     --results_dir /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/BCP2CBCP/BCP2CBCP_pred/ \
     --name CUT_monai_BCP2CBCP --model cut --direction AtoB --no_dropout --no_flip --dataset_mode monai \
-    --batch_size 16 --input_nc 1 --output_nc 1 --preprocess scale_width_and_crop --ngf 96 --phase all
+    --batch_size 16 --input_nc 1 --output_nc 1 --preprocess scale_width_and_crop --ngf 96 --phase all \
+    --pixel_dim 0.8 0.8 -1

@@ -18,4 +18,12 @@ python train.py --dataroot /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/
     --dataset_mode monai --batch_size 16 --input_nc 1 --output_nc 1 --ngf 96 --gan_mode lsgan \
     --num_threads 8 --n_epochs 30 --n_epochs_decay 30  --lr 0.0001 --preprocess scale_width_and_crop --load_size 256 \
     --display_id 0 \
-    --pixel_dim 0.8 0.8 -1 
+    --pixel_dim 0.8 0.8 -1
+
+# torchrun --nproc_per_node=8  python train.py --dataroot /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/BCP2CBCP/\
+# --name CUT_monai_BCP2CBCPtest --model cut --direction AtoB \
+# --no_dropout --no_flip --n_layers_D 3 --save_epoch_freq 10 \
+# --dataset_mode monai --batch_size 16 --input_nc 1 --output_nc 1 --ngf 96 --gan_mode lsgan \
+# --num_threads 8 --n_epochs 30 --n_epochs_decay 30  --lr 0.0001 --preprocess scale_width_and_crop --load_size 256 \
+# --display_id 0 \
+# --pixel_dim 0.8 0.8 -1

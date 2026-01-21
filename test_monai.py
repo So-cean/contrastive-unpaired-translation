@@ -40,7 +40,7 @@ class MonaiTestProcessor:
         self.output_channels = max(input_nc, output_nc, 1)
 
         pixel_dim_opt = getattr(opt, 'pixel_dim')
-        pixel_dim = tuple(float(x) for x in pixel_dim_opt)
+        self.pix_dim = tuple(float(x) for x in pixel_dim_opt)
 
         print(f"MonaiTestProcessor using pix_dim: {self.pix_dim}")
 

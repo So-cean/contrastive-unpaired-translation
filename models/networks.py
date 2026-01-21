@@ -881,13 +881,14 @@ class Conv2dBlock(nn.Module):
 
         # initialize activation
         if activation == 'relu':
-            self.activation = nn.ReLU(inplace=True)
+            # Changed to not use inplace to avoid modifying tensors needed for gradients
+            self.activation = nn.ReLU(inplace=False)
         elif activation == 'lrelu':
-            self.activation = nn.LeakyReLU(0.2, inplace=True)
+            self.activation = nn.LeakyReLU(0.2, inplace=False)
         elif activation == 'prelu':
             self.activation = nn.PReLU()
         elif activation == 'selu':
-            self.activation = nn.SELU(inplace=True)
+            self.activation = nn.SELU(inplace=False)
         elif activation == 'tanh':
             self.activation = nn.Tanh()
         elif activation == 'none':
@@ -929,13 +930,13 @@ class LinearBlock(nn.Module):
 
         # initialize activation
         if activation == 'relu':
-            self.activation = nn.ReLU(inplace=True)
+            self.activation = nn.ReLU(inplace=False)
         elif activation == 'lrelu':
-            self.activation = nn.LeakyReLU(0.2, inplace=True)
+            self.activation = nn.LeakyReLU(0.2, inplace=False)
         elif activation == 'prelu':
             self.activation = nn.PReLU()
         elif activation == 'selu':
-            self.activation = nn.SELU(inplace=True)
+            self.activation = nn.SELU(inplace=False)
         elif activation == 'tanh':
             self.activation = nn.Tanh()
         elif activation == 'none':
@@ -1008,7 +1009,7 @@ class ResnetGenerator(nn.Module):
         model = [nn.ReflectionPad2d(3),
                  nn.Conv2d(input_nc, ngf, kernel_size=7, padding=0, bias=use_bias),
                  norm_layer(ngf),
-                 nn.ReLU(True)]
+                 nn.ReLU(inplace=False)]
 
         n_downsampling = 2
         for i in range(n_downsampling):  # add downsampling layers
@@ -1016,11 +1017,11 @@ class ResnetGenerator(nn.Module):
             if(no_antialias):
                 model += [nn.Conv2d(ngf * mult, ngf * mult * 2, kernel_size=3, stride=2, padding=1, bias=use_bias),
                           norm_layer(ngf * mult * 2),
-                          nn.ReLU(True)]
+                          nn.ReLU(inplace=False)]
             else:
                 model += [nn.Conv2d(ngf * mult, ngf * mult * 2, kernel_size=3, stride=1, padding=1, bias=use_bias),
                           norm_layer(ngf * mult * 2),
-                          nn.ReLU(True),
+                          nn.ReLU(inplace=False),
                           Downsample(ngf * mult * 2)]
 
         mult = 2 ** n_downsampling
@@ -1036,7 +1037,7 @@ class ResnetGenerator(nn.Module):
                                              padding=1, output_padding=1,
                                              bias=use_bias),
                           norm_layer(int(ngf * mult / 2)),
-                          nn.ReLU(True)]
+                          nn.ReLU(inplace=False)]
             else:
                 model += [Upsample(ngf * mult),
                           nn.Conv2d(ngf * mult, int(ngf * mult / 2),
@@ -1044,7 +1045,7 @@ class ResnetGenerator(nn.Module):
                                     padding=1,  # output_padding=1,
                                     bias=use_bias),
                           norm_layer(int(ngf * mult / 2)),
-                          nn.ReLU(True)]
+                          nn.ReLU(inplace=False)]
         model += [nn.ReflectionPad2d(3)]
         model += [nn.Conv2d(ngf, output_nc, kernel_size=7, padding=0)]
         model += [nn.Tanh()]
@@ -1114,7 +1115,7 @@ class ResnetDecoder(nn.Module):
                                              padding=1, output_padding=1,
                                              bias=use_bias),
                           norm_layer(int(ngf * mult / 2)),
-                          nn.ReLU(True)]
+                          nn.ReLU(inplace=False)]
             else:
                 model += [Upsample(ngf * mult),
                           nn.Conv2d(ngf * mult, int(ngf * mult / 2),
@@ -1122,7 +1123,7 @@ class ResnetDecoder(nn.Module):
                                     padding=1,
                                     bias=use_bias),
                           norm_layer(int(ngf * mult / 2)),
-                          nn.ReLU(True)]
+                          nn.ReLU(inplace=False)]
         model += [nn.ReflectionPad2d(3)]
         model += [nn.Conv2d(ngf, output_nc, kernel_size=7, padding=0)]
         model += [nn.Tanh()]
@@ -1160,7 +1161,7 @@ class ResnetEncoder(nn.Module):
         model = [nn.ReflectionPad2d(3),
                  nn.Conv2d(input_nc, ngf, kernel_size=7, padding=0, bias=use_bias),
                  norm_layer(ngf),
-                 nn.ReLU(True)]
+                 nn.ReLU(inplace=False)]
 
         n_downsampling = 2
         for i in range(n_downsampling):  # add downsampling layers
@@ -1168,11 +1169,11 @@ class ResnetEncoder(nn.Module):
             if(no_antialias):
                 model += [nn.Conv2d(ngf * mult, ngf * mult * 2, kernel_size=3, stride=2, padding=1, bias=use_bias),
                           norm_layer(ngf * mult * 2),
-                          nn.ReLU(True)]
+                          nn.ReLU(inplace=False)]
             else:
                 model += [nn.Conv2d(ngf * mult, ngf * mult * 2, kernel_size=3, stride=1, padding=1, bias=use_bias),
                           norm_layer(ngf * mult * 2),
-                          nn.ReLU(True),
+                          nn.ReLU(inplace=False),
                           Downsample(ngf * mult * 2)]
 
         mult = 2 ** n_downsampling
@@ -1224,7 +1225,8 @@ class ResnetBlock(nn.Module):
         else:
             raise NotImplementedError('padding [%s] is not implemented' % padding_type)
 
-        conv_block += [nn.Conv2d(dim, dim, kernel_size=3, padding=p, bias=use_bias), norm_layer(dim), nn.ReLU(True)]
+        # Use non-inplace ReLU/LeakyReLU to avoid in-place modification issues
+        conv_block += [nn.Conv2d(dim, dim, kernel_size=3, padding=p, bias=use_bias), norm_layer(dim), nn.ReLU(inplace=False)]
         if use_dropout:
             conv_block += [nn.Dropout(0.5)]
 
@@ -1309,9 +1311,9 @@ class UnetSkipConnectionBlock(nn.Module):
             input_nc = outer_nc
         downconv = nn.Conv2d(input_nc, inner_nc, kernel_size=4,
                              stride=2, padding=1, bias=use_bias)
-        downrelu = nn.LeakyReLU(0.2, True)
+        downrelu = nn.LeakyReLU(0.2, inplace=False)
         downnorm = norm_layer(inner_nc)
-        uprelu = nn.ReLU(True)
+        uprelu = nn.ReLU(inplace=False)
         upnorm = norm_layer(outer_nc)
 
         if outermost:
@@ -1370,9 +1372,9 @@ class NLayerDiscriminator(nn.Module):
         kw = 4
         padw = 1
         if(no_antialias):
-            sequence = [nn.Conv2d(input_nc, ndf, kernel_size=kw, stride=2, padding=padw), nn.LeakyReLU(0.2, True)]
+            sequence = [nn.Conv2d(input_nc, ndf, kernel_size=kw, stride=2, padding=padw), nn.LeakyReLU(0.2, inplace=False)]
         else:
-            sequence = [nn.Conv2d(input_nc, ndf, kernel_size=kw, stride=1, padding=padw), nn.LeakyReLU(0.2, True), Downsample(ndf)]
+            sequence = [nn.Conv2d(input_nc, ndf, kernel_size=kw, stride=1, padding=padw), nn.LeakyReLU(0.2, inplace=False), Downsample(ndf)]
         nf_mult = 1
         nf_mult_prev = 1
         for n in range(1, n_layers):  # gradually increase the number of filters
@@ -1382,13 +1384,13 @@ class NLayerDiscriminator(nn.Module):
                 sequence += [
                     nn.Conv2d(ndf * nf_mult_prev, ndf * nf_mult, kernel_size=kw, stride=2, padding=padw, bias=use_bias),
                     norm_layer(ndf * nf_mult),
-                    nn.LeakyReLU(0.2, True)
+                    nn.LeakyReLU(0.2, inplace=False)
                 ]
             else:
                 sequence += [
                     nn.Conv2d(ndf * nf_mult_prev, ndf * nf_mult, kernel_size=kw, stride=1, padding=padw, bias=use_bias),
                     norm_layer(ndf * nf_mult),
-                    nn.LeakyReLU(0.2, True),
+                    nn.LeakyReLU(0.2, inplace=False),
                     Downsample(ndf * nf_mult)]
 
         nf_mult_prev = nf_mult
@@ -1396,7 +1398,7 @@ class NLayerDiscriminator(nn.Module):
         sequence += [
             nn.Conv2d(ndf * nf_mult_prev, ndf * nf_mult, kernel_size=kw, stride=1, padding=padw, bias=use_bias),
             norm_layer(ndf * nf_mult),
-            nn.LeakyReLU(0.2, True)
+            nn.LeakyReLU(0.2, inplace=False)
         ]
 
         sequence += [nn.Conv2d(ndf * nf_mult, 1, kernel_size=kw, stride=1, padding=padw)]  # output 1 channel prediction map
@@ -1426,10 +1428,10 @@ class PixelDiscriminator(nn.Module):
 
         self.net = [
             nn.Conv2d(input_nc, ndf, kernel_size=1, stride=1, padding=0),
-            nn.LeakyReLU(0.2, True),
+            nn.LeakyReLU(0.2, inplace=False),
             nn.Conv2d(ndf, ndf * 2, kernel_size=1, stride=1, padding=0, bias=use_bias),
             norm_layer(ndf * 2),
-            nn.LeakyReLU(0.2, True),
+            nn.LeakyReLU(0.2, inplace=False),
             nn.Conv2d(ndf * 2, 1, kernel_size=1, stride=1, padding=0, bias=use_bias)]
 
         self.net = nn.Sequential(*self.net)

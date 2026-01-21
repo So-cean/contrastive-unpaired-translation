@@ -143,6 +143,7 @@ class CUTModel(BaseModel):
         self.set_requires_grad(self.netD, True)
         self.optimizer_D.zero_grad()
         self.loss_D = self.compute_D_loss()
+        # with torch.autograd.detect_anomaly(False):
         self.loss_D.backward()
         self.optimizer_D.step()
 
@@ -152,6 +153,7 @@ class CUTModel(BaseModel):
         if self.opt.netF == 'mlp_sample':
             self.optimizer_F.zero_grad()
         self.loss_G = self.compute_G_loss()
+        # with torch.autograd.detect_anomaly(False):
         self.loss_G.backward()
         self.optimizer_G.step()
         if self.opt.netF == 'mlp_sample':

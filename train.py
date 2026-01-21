@@ -8,16 +8,26 @@ from models import create_model
 from util.visualizer import Visualizer
 
 
+import importlib
+import shutil
+if shutil.which("npu-smi") and importlib.util.find_spec("torch_npu") is not None:
+    import torch_npu
+    from torch_npu.contrib import transfer_to_npu  
+    torch.npu.set_compile_mode(jit_compile=False)
+    torch.npu.config.allow_internal_format = False
+
+
 if __name__ == '__main__':
     opt = TrainOptions().parse()   # get training options
 
     # Initialize distributed training if launched with torch.distributed.launch or torchrun
     local_rank = int(os.environ.get('LOCAL_RANK', 0))
+    rank = int(os.environ.get('RANK', 0))
     world_size = int(os.environ.get('WORLD_SIZE', 1))
     distributed = world_size > 1
 
     if distributed:
-        dist.init_process_group(backend='nccl', init_method='env://')
+        dist.init_process_group(backend='hccl', init_method='env://')
         torch.cuda.set_device(local_rank)
         # Ensure the option reflects the single GPU for this process
         opt.gpu_ids = [local_rank]
@@ -30,13 +40,16 @@ if __name__ == '__main__':
                     torch.cuda.set_device(opt.gpu_ids[0])
             except Exception:
                 pass
-
+            
+    
     dataset = create_dataset(opt)  # create a dataset given opt.dataset_mode and other options
     dataset_size = len(dataset)    # get the number of images in the dataset.
 
     model = create_model(opt)      # create a model given opt.model and other options
+    
     print('The number of training images = %d' % dataset_size)
-
+    print(f'[rank {rank}] sampler = {dataset.sampler}')
+    print(f'[rank {rank}] len(loader) = {len(dataset)}')
     visualizer = Visualizer(opt)   # create a visualizer that display/save images and plots
     opt.visualizer = visualizer
     total_iters = 0                # the total number of training iterations
@@ -60,33 +73,33 @@ if __name__ == '__main__':
             batch_size = data["A"].size(0)
             total_iters += batch_size
             epoch_iter += batch_size
-            if len(opt.gpu_ids) > 0:
-                torch.cuda.synchronize()
+                
             optimize_start_time = time.time()
             if epoch == opt.epoch_count and i == 0:
                 model.data_dependent_initialize(data)
                 model.setup(opt)               # regular setup: load and print networks; create schedulers
                 model.parallelize()
+
             model.set_input(data)  # unpack data from dataset and apply preprocessing
             model.optimize_parameters()   # calculate loss functions, get gradients, update network weights
-            if len(opt.gpu_ids) > 0:
-                torch.cuda.synchronize()
+
             optimize_time = (time.time() - optimize_start_time) / batch_size * 0.005 + 0.995 * optimize_time
+            # if total_iters % opt.display_freq == 0:
+            #     save_result = total_iters % opt.update_html_freq == 0
+            #     model.compute_visuals()          # 所有卡都算图
+            #     if rank == 0:                    # 仅 rank 0 展示/保存
+            #         visualizer.display_current_results(model.get_current_visuals(), epoch, save_result)
 
-            if total_iters % opt.display_freq == 0:   # display images on visdom and save images to a HTML file
-                save_result = total_iters % opt.update_html_freq == 0
-                model.compute_visuals()
-                visualizer.display_current_results(model.get_current_visuals(), epoch, save_result)
-
-            if total_iters % opt.print_freq == 0:    # print training losses and save logging information to the disk
-                losses = model.get_current_losses()
-                visualizer.print_current_losses(epoch, epoch_iter, losses, optimize_time, t_data)
-                if opt.display_id is None or opt.display_id > 0:
-                    visualizer.plot_current_losses(epoch, float(epoch_iter) / dataset_size, losses)
+            # if total_iters % opt.print_freq == 0:    # print training losses and save logging information to the disk
+            #     losses = model.get_current_losses()
+            #     visualizer.print_current_losses(epoch, epoch_iter, losses, optimize_time, t_data)
+            #     if rank == 0:                    # 仅 rank 0 打印 & 绘图
+            #         visualizer.print_current_losses(epoch, epoch_iter, losses, optimize_time, t_data)
+            #         if opt.display_id is None or opt.display_id > 0:
+            #             visualizer.plot_current_losses(epoch, float(epoch_iter) / dataset_size, losses)
 
             if total_iters % opt.save_latest_freq == 0:   # cache our latest model every <save_latest_freq> iterations
                 # Only save from rank 0 process to avoid race conditions
-                rank = int(os.environ.get('RANK', 0))
                 if (not distributed) or rank == 0:
                     print('saving the latest model (epoch %d, total_iters %d)' % (epoch, total_iters))
                     print(opt.name)  # it's useful to occasionally show the experiment name on console
@@ -96,7 +109,6 @@ if __name__ == '__main__':
             iter_data_time = time.time()
 
         # only save checkpoints from rank 0
-        rank = int(os.environ.get('RANK', 0))
         if epoch % opt.save_epoch_freq == 0 and ((not distributed) or rank == 0):              # cache our model every <save_epoch_freq> epochs
             print('saving the model at the end of epoch %d, iters %d' % (epoch, total_iters))
             model.save_networks('latest')

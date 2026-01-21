@@ -7,6 +7,7 @@ import numpy as np
 import torch
 from collections import OrderedDict
 import pandas as pd
+import torch.distributed as dist
 
 # Add the project root to Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -271,6 +272,7 @@ class MonaiDataset(BaseDataset):
         B_path = self.B_paths[B_index]
         A = self.load_and_extract_slice(A_path, 'A')
         B = self.load_and_extract_slice(B_path, 'B')
+        # print(f'[rank {dist.get_rank()}] idx={index}  file={A_path}, {B_path}')
         return {"A": A, "B": B, "A_paths": A_path, "B_paths": B_path}
 
     def __len__(self):

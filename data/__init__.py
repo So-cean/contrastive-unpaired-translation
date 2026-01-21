@@ -14,6 +14,29 @@ import importlib
 import torch.utils.data
 from data.base_dataset import BaseDataset
 import torch
+import random
+import numpy as np
+import torch.distributed as dist
+import math
+
+
+def _worker_init_fn(worker_id):
+    """Initialize random seeds for each DataLoader worker.
+    Uses torch.initial_seed() which is already different per worker; incorporate rank so different ranks don't share seeds.
+    """
+    try:
+        base_seed = torch.initial_seed() % (2**32)
+    except Exception:
+        base_seed = int(torch.empty((), dtype=torch.int64).random_().item()) % (2**32)
+    rank = 0
+    try:
+        if dist.is_available() and dist.is_initialized():
+            rank = dist.get_rank()
+    except Exception:
+        rank = 0
+    seed = (base_seed + rank + worker_id) % (2**32)
+    random.seed(seed)
+    np.random.seed(seed)
 
 
 def find_dataset_using_name(dataset_name):
@@ -77,19 +100,22 @@ class CustomDatasetDataLoader():
         # Use DistributedSampler when running under torch.distributed
         self.sampler = None
         if torch.distributed.is_available() and torch.distributed.is_initialized():
-            try:
-                self.sampler = torch.utils.data.distributed.DistributedSampler(self.dataset, shuffle=(not opt.serial_batches))
-            except Exception:
-                self.sampler = None
-
+            self.sampler = torch.utils.data.distributed.DistributedSampler(self.dataset, shuffle=(not opt.serial_batches))
+            
         self.dataloader = torch.utils.data.DataLoader(
             self.dataset,
             batch_size=opt.batch_size,
             shuffle=(self.sampler is None and not opt.serial_batches),
             sampler=self.sampler,
             num_workers=int(opt.num_threads),
+            pin_memory=True,
+            persistent_workers=True if int(opt.num_threads) > 0 else False,
             drop_last=True if opt.isTrain else False,
+            worker_init_fn=_worker_init_fn if int(opt.num_threads) > 0 else None,
         )
+        # check sampler
+        print(f"DataLoader created with sampler={self.dataloader.sampler}, type={type(self.dataloader.sampler)}")
+        print(f"len sampler = {len(self.sampler) if self.sampler is not None else 'N/A'}")
 
     def set_epoch(self, epoch):
         self.dataset.current_epoch = epoch
@@ -104,8 +130,17 @@ class CustomDatasetDataLoader():
         return self
 
     def __len__(self):
-        """Return the number of data in the dataset"""
-        return min(len(self.dataset), self.opt.max_dataset_size)
+        """Return the number of data in the dataset
+        
+        When running with DistributedSampler (DDP), return the number of samples assigned to this
+        replica (so len(dataset) reflects the local partition). Otherwise return the dataset length
+        truncated by opt.max_dataset_size as before.
+        """
+        if self.sampler is not None:
+            # 注意：DistributedSampler 会自动分区数据，这里返回当前进程的样本数
+            return len(self.sampler)
+        else:
+            return min(len(self.dataset), self.opt.max_dataset_size)
 
     def __iter__(self):
         """Return a batch of data"""

@@ -1,0 +1,33 @@
+Wed Jan 21 16:00:36 CST 2026
+top - 16:00:37 up 373 days, 16:39,  2 users,  load average: 82.45, 65.33, 53.01
+Tasks: 1969 total,   2 running, 1967 sleeping,   0 stopped,   0 zombie
+%Cpu(s):  0.9 us,  0.1 sy,  0.0 ni, 99.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+MiB Mem : 1045781.+total, 502062.6 free,  35224.9 used, 508493.6 buff/cache
+MiB Swap:  55295.9 total,  32812.7 free,  22483.2 used. 864857.7 avail Mem 
+
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+4174244 songhy2+  20   0 8222.0g   7.7g 769024 R  78.3   0.8 168:27.32 python
+4175555 songhy2+  20   0  243648  16704   5440 R  13.0   0.0   0:00.07 top
+ 428562 root      -2   0       0      0      0 D   4.3   0.0   1663:44 dev3_sq_task
+      1 root      20   0  194176   9920   4864 S   0.0   0.0  46:25.12 systemd
+      2 root      20   0       0      0      0 S   0.0   0.0   1:54.81 kthreadd
+      3 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 rcu_gp
+      4 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 rcu_par_gp
+      6 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker/0:0H-events_highpri
+      9 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 mm_percpu_wq
+     10 root      20   0       0      0      0 S   0.0   0.0 591:17.24 ksoftirqd/0
+     11 root      20   0       0      0      0 I   0.0   0.0 390:46.10 rcu_sched
+     12 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_bh
+     13 root      rt   0       0      0      0 S   0.0   0.0   0:23.10 migration/0
+     14 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/0
+     15 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/1
+     16 root      rt   0       0      0      0 S   0.0   0.0   0:20.55 migration/1
+     17 root      20   0       0      0      0 S   0.0   0.0  20:41.44 ksoftirqd/1
+     19 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker/1:0H-events_highpri
+     20 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/2
+     21 root      rt   0       0      0      0 S   0.0   0.0   0:18.62 migration/2
+     22 root      20   0       0      0      0 S   0.0   0.0   9:14.27 ksoftirqd/2
+     24 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker/2:0H-events_highpri
+     25 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/3
+     26 root      rt   0       0      0      0 S   0.0   0.0   0:19.05 migration/3
+     27 root      20   0       0      0      0 S   0.0   0.0   6:07.50 ksoftirqd/3

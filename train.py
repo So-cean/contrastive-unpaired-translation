@@ -47,6 +47,7 @@ if __name__ == '__main__':
 
     model = create_model(opt)      # create a model given opt.model and other options
     
+    
     print('The number of training images = %d' % dataset_size)
     print(f'[rank {rank}] sampler = {dataset.sampler}')
     print(f'[rank {rank}] len(loader) = {len(dataset)}')
@@ -75,6 +76,7 @@ if __name__ == '__main__':
             epoch_iter += batch_size
                 
             optimize_start_time = time.time()
+            
             if epoch == opt.epoch_count and i == 0:
                 model.data_dependent_initialize(data)
                 model.setup(opt)               # regular setup: load and print networks; create schedulers
@@ -84,19 +86,18 @@ if __name__ == '__main__':
             model.optimize_parameters()   # calculate loss functions, get gradients, update network weights
 
             optimize_time = (time.time() - optimize_start_time) / batch_size * 0.005 + 0.995 * optimize_time
-            # if total_iters % opt.display_freq == 0:
-            #     save_result = total_iters % opt.update_html_freq == 0
-            #     model.compute_visuals()          # 所有卡都算图
-            #     if rank == 0:                    # 仅 rank 0 展示/保存
-            #         visualizer.display_current_results(model.get_current_visuals(), epoch, save_result)
+            if total_iters % opt.display_freq == 0:
+                save_result = total_iters % opt.update_html_freq == 0
+                if rank == 0:                    # 仅 rank 0 展示/保存
+                    model.compute_visuals()          # 所有卡都算图
+                    visualizer.display_current_results(model.get_current_visuals(), epoch, save_result)
 
-            # if total_iters % opt.print_freq == 0:    # print training losses and save logging information to the disk
-            #     losses = model.get_current_losses()
-            #     visualizer.print_current_losses(epoch, epoch_iter, losses, optimize_time, t_data)
-            #     if rank == 0:                    # 仅 rank 0 打印 & 绘图
-            #         visualizer.print_current_losses(epoch, epoch_iter, losses, optimize_time, t_data)
-            #         if opt.display_id is None or opt.display_id > 0:
-            #             visualizer.plot_current_losses(epoch, float(epoch_iter) / dataset_size, losses)
+            if total_iters % opt.print_freq == 0:    # print training losses and save logging information to the disk
+                losses = model.get_current_losses()
+                if rank == 0:                    # 仅 rank 0 打印 & 绘图
+                    visualizer.print_current_losses(epoch, epoch_iter, losses, optimize_time, t_data)
+                    if opt.display_id is None or opt.display_id > 0:
+                        visualizer.plot_current_losses(epoch, float(epoch_iter) / dataset_size, losses)
 
             if total_iters % opt.save_latest_freq == 0:   # cache our latest model every <save_latest_freq> iterations
                 # Only save from rank 0 process to avoid race conditions
@@ -116,6 +117,8 @@ if __name__ == '__main__':
 
         print('End of epoch %d / %d \t Time Taken: %d sec' % (epoch, opt.n_epochs + opt.n_epochs_decay, time.time() - epoch_start_time))
         model.update_learning_rate()                     # update learning rates at the end of every epoch.
+        
+        
 
     # clean up distributed process group
     if distributed:

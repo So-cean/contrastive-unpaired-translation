@@ -4,7 +4,7 @@ from .base_model import BaseModel
 from . import networks
 from .patchnce import PatchNCELoss
 import util.util as util
-from pytorch_msssim import ssim      
+from pytorch_msssim import ssim, SSIM
 import torch.nn.functional as F
 
 class CUTModel(BaseModel):
@@ -36,7 +36,7 @@ class CUTModel(BaseModel):
         parser.add_argument('--flip_equivariance',
                             type=util.str2bool, nargs='?', const=True, default=False,
                             help="Enforce flip-equivariance as additional regularization. It's used by FastCUT, but not CUT")
-        parser.add_argument('--lambda_SSIM', type=float, default=1.0, help='weight for SSIM loss')
+        parser.add_argument('--lambda_SSIM', type=float, default=0.1, help='weight for SSIM loss')
         parser.add_argument('--lambda_grad', type=float, default=0.5, help='weight for Sobel-gradient consistency')
         
         
@@ -94,13 +94,15 @@ class CUTModel(BaseModel):
             self.optimizer_D = torch.optim.Adam(self.netD.parameters(), lr=opt.lr, betas=(opt.beta1, opt.beta2))
             self.optimizers.append(self.optimizer_G)
             self.optimizers.append(self.optimizer_D)
+            
+        self.ssim_loss = SSIM(data_range=2.0, size_average=True, channel=opt.output_nc)
 
     # ----------- SSIM -----------
     def compute_ssim_loss(self, src, tgt):
-        # 需要 3 通道
-        src3 = src.repeat(1, 3, 1, 1)
-        tgt3 = tgt.repeat(1, 3, 1, 1)
-        return 1 - ssim(src3, tgt3, data_range=1.0, size_average=True)
+        # src, tgt: [-1, 1] -> 映射到 [0, 1] 再算 SSIM，更直观
+        src = (src + 1) / 2
+        tgt = (tgt + 1) / 2
+        return 1 - ssim(src, tgt, data_range=1.0, size_average=True)
 
     # ----------- Sobel 梯度一致性 -----------
     def sobel_grad_loss(self, src, tgt):
@@ -168,7 +170,10 @@ class CUTModel(BaseModel):
         AtoB = self.opt.direction == 'AtoB'
         self.real_A = input['A' if AtoB else 'B'].to(self.device)
         self.real_B = input['B' if AtoB else 'A'].to(self.device)
-        self.image_paths = input['A_paths' if AtoB else 'B_paths']
+        self.image_paths = input['A_paths' if AtoB else 'B_paths'] 
+        # range [-1, 1]
+        # print(f"real_A range: {self.real_A.min().item()} ~ {self.real_A.max().item()}")
+        # print(f"real_B range: {self.real_B.min().item()} ~ {self.real_B.max().item()}")
 
     def forward(self):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""

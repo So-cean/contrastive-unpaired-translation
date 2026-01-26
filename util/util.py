@@ -136,8 +136,7 @@ def mkdir(path):
     Parameters:
         path (str) -- a single directory path
     """
-    if not os.path.exists(path):
-        os.makedirs(path)
+    os.makedirs(path, exist_ok=True)
 
 
 def correct_resize_label(t, size):

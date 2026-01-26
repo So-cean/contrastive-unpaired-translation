@@ -3,7 +3,9 @@ import re
 import sys
 import random
 import glob
+from networkx import volume
 import numpy as np
+import nibabel as nib
 import torch
 from collections import OrderedDict
 import pandas as pd
@@ -12,15 +14,12 @@ import torch.distributed as dist
 # Add the project root to Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import data
 from data.base_dataset import BaseDataset
 
-try:
-    import monai
-    import monai.transforms as monai_transforms
-    MONAI_AVAILABLE = True
-except ImportError:
-    MONAI_AVAILABLE = False
-    print("Warning: MONAI not available. Please install MONAI for MRI data loading.")
+
+import monai.transforms as monai_transforms
+from monai.data import CacheDataset
 
 
 class MonaiDataset(BaseDataset):
@@ -50,9 +49,6 @@ class MonaiDataset(BaseDataset):
             opt (Option class) -- stores all the experiment flags; needs to be a subclass of BaseOptions
         """
         BaseDataset.__init__(self, opt)
-        
-        if not MONAI_AVAILABLE:
-            raise ImportError("MONAI is required for MRI dataset. Please install with: pip install monai")
             
         self.dir_A = os.path.join(opt.dataroot, opt.phase + "A")  # thick slice data
         self.dir_B = os.path.join(opt.dataroot, opt.phase + "B")  # thin slice data
@@ -73,13 +69,8 @@ class MonaiDataset(BaseDataset):
         if self.B_size == 0:
             raise ValueError(f"No .nii.gz files found in {self.dir_B}")
             
-        print(f"Found {self.A_size} files in domain A (thick slices) and {self.B_size} files in domain B (thin slices)")
-        
-        # Initialize cache for loaded volumes
-        self.cache_size = getattr(opt, 'cache_size', 100)  # Cache up to 200 volumes by default
-        self.volume_cache = OrderedDict()  # LRU cache
-        print(f"Volume cache size: {self.cache_size}")
-        
+        print(f"Found {self.A_size} files in domain A  and {self.B_size} files in domain B ")
+
         # Determine if we should output grayscale or RGB based on opt settings
         btoA = getattr(opt, 'direction', 'AtoB') == "BtoA"
         input_nc = getattr(opt, 'output_nc', 1) if btoA else getattr(opt, 'input_nc', 1)
@@ -105,150 +96,74 @@ class MonaiDataset(BaseDataset):
             monai_transforms.Spacingd(keys=["image"], pixdim=pixel_dim, mode=("bilinear")),
             monai_transforms.CenterSpatialCropd(keys=["image"], roi_size=(256, 256, -1)),
             monai_transforms.SpatialPadd(keys=["image"], spatial_size=(256, 256, -1), mode="constant", constant_values=0),
-            monai_transforms.ScaleIntensityRangePercentilesd(keys=["image"], lower=0, upper=99.5, b_min=0, b_max=1, clip=True),
+            monai_transforms.ScaleIntensityRangePercentilesd(keys=["image"], lower=0.5, upper=99.5, b_min=0, b_max=1, clip=True),
         ])
-        
+        self.data_A = CacheDataset(
+            data=[{"image": path} for path in self.A_paths],
+            transform=self.transform,
+            cache_rate=1.0,
+            num_workers=opt.num_threads,
+            copy_cache=False,
+        )
+        self.data_B = CacheDataset(
+            data=[{"image": path} for path in self.B_paths],
+            transform=self.transform,
+            cache_rate=1.0,
+            num_workers=opt.num_threads,
+            copy_cache=False,
+        )
         
         # Calculate total valid slices for each domain
-        self._calculate_valid_slices()
-        
-    
-    def _get_cached_volume(self, nii_path):
-        """Get volume from cache or load and cache it."""
-        if nii_path in self.volume_cache:
-            # Move to end (most recently used)
-            volume = self.volume_cache.pop(nii_path)
-            self.volume_cache[nii_path] = volume
-            return volume
-        
-        # Load volume and add to cache - use dictionary format for MONAI transforms with 'd' suffix
-        data_dict = {"image": nii_path}
-        processed_dict = self.transform(data_dict)
-        volume_tensor = processed_dict["image"]
-        
-        # Remove oldest item if cache is full
-        if len(self.volume_cache) >= self.cache_size:
-            self.volume_cache.popitem(last=False)  # Remove least recently used
-        
-        self.volume_cache[nii_path] = volume_tensor
-        return volume_tensor
+        self._calculate_valid_slices(domain='A')
+        self._calculate_valid_slices(domain='B')        
 
-    def _calculate_valid_slices(self):
+    def _calculate_valid_slices(self, domain:str='A'):
         """Calculate the total number of valid slices for each domain."""
-        print("Calculating valid slices for each domain...")
+        data_domain = getattr(self, f"data_{domain}")        
+        min_nonzero_pixels = 100  # Minimum number of non-zero pixels to consider a slice valid
+        slice_list = []
+        slices_per_volume = {i: [] for i in range(len(data_domain))}
         
-        self.A_total_slices = 0
-        self.B_total_slices = 0
-        
-        # Calculate for domain A (thick slices)
-        for path in self.A_paths:
-            try:
-                volume_tensor = self._get_cached_volume(path)
-                if volume_tensor.dim() == 4:
-                    volume_tensor = volume_tensor.squeeze(0)
+        for volume_idx in range(len(data_domain)):
+            volume_dict = data_domain[volume_idx]
+            data = volume_dict["image"] # (C, H, W, D)
+            
+            valid_z = [z for z in range(data.shape[-1]) if np.count_nonzero(data[..., z]) > min_nonzero_pixels]
+            
+            if not valid_z:
+                valid_z = [data.shape[-1] // 2]
                 
-                if volume_tensor.dim() == 3:
-                    _, _, depth = volume_tensor.shape
-                    # Count valid slices
-                    valid_count = 0
-                    for i in range(depth):
-                        slice_2d = volume_tensor[:, :, i]
-                        if torch.sum(slice_2d > 0.1) > (slice_2d.numel() * 0.05):
-                            valid_count += 1
-                    
-                    # If no valid slices, use middle 50% as fallback
-                    if valid_count == 0:
-                        valid_count = max(1, depth // 2)
-                    
-                    self.A_total_slices += valid_count
-            except Exception as e:
-                print(f"Warning: Could not process {path}: {e}")
-                self.A_total_slices += 1
+            slice_list.extend([(volume_idx, z) for z in valid_z])
+            slices_per_volume[volume_idx] = valid_z
         
-        # Calculate for domain B (thin slices)
-        for path in self.B_paths:
-            try:
-                volume_tensor = self._get_cached_volume(path)
-                if volume_tensor.dim() == 4:
-                    volume_tensor = volume_tensor.squeeze(0)
-                
-                if volume_tensor.dim() == 3:
-                    _, _, depth = volume_tensor.shape
-                    # Count valid slices
-                    valid_count = 0
-                    for i in range(depth):
-                        slice_2d = volume_tensor[:, :, i]
-                        if torch.sum(slice_2d > 0.1) > (slice_2d.numel() * 0.05):
-                            valid_count += 1
-                    
-                    # If no valid slices, use middle 50% as fallback
-                    if valid_count == 0:
-                        valid_count = max(1, depth // 2)
-                    
-                    self.B_total_slices += valid_count
-            except Exception as e:
-                print(f"Warning: Could not process {path}: {e}")
-                self.B_total_slices += 1
+        setattr(self,f"slice_list_{domain}",slice_list)
+        setattr(self, f"slices_per_volume_{domain}", slices_per_volume)
         
-        print(f"Domain A (thick) total valid slices: {self.A_total_slices}")
-        print(f"Domain B (thin) total valid slices: {self.B_total_slices}")
+        print(f"Domain {domain} total valid slices: {len(slice_list)}")
 
-    def load_and_extract_slice(self, nii_path, domain='A'):
+    def load_and_extract_slice(self, index, domain:str="A"):
         """Load 3D NIfTI volume and extract a random 2D slice.
         
         Parameters:
-            nii_path (str): Path to the NIfTI file
-            domain (str): Domain identifier ('A' for thick, 'B' for thin)
+            domain (str): Domain identifier ('A' , 'B')
             
         Returns:
             torch.Tensor: 2D slice tensor (output_channels, 256, 256) normalized to [-1, 1]
         """
-        # Load and preprocess 3D volume using cached MONAI transform
-        volume_tensor = self._get_cached_volume(nii_path)
+        slice_list = getattr(self, f"slice_list_{domain}")
+        slices_per_volume = getattr(self, f"slices_per_volume_{domain}")
+        data_domain = getattr(self, f"data_{domain}")
+        volume_dict = data_domain[index]
+        image = volume_dict["image"] # (C, H, W, D)
+        valid_z = slices_per_volume[index]
+        z = np.random.choice(valid_z)
+            
+        slice_2d = image[..., z].as_tensor()  # (C, H, W)
         
-        # Remove channel dimension for slice selection (C, H, W, D) -> (H, W, D)
-        if volume_tensor.dim() == 4:
-            volume_tensor = volume_tensor.squeeze(0)
+        slice_2d = slice_2d.repeat(self.output_channels, 1, 1)  # (output_channels, 256, 256)
+        slice_2d = slice_2d * 2.0 - 1.0  # Normalize to [-1, 1]      
         
-        # Get volume dimensions
-        if volume_tensor.dim() == 3:
-            height, width, depth = volume_tensor.shape
-        else:
-            raise ValueError(f"Unexpected tensor dimensions: {volume_tensor.shape}")
-        
-        # Find valid slices (non-empty slices)
-        valid_slices = []
-        for i in range(depth):
-            slice_2d = volume_tensor[:, :, i]
-            # Check if slice has meaningful content (not just zeros/background)
-            if torch.sum(slice_2d > 0.1) > (slice_2d.numel() * 0.05):  # At least 5% non-background
-                valid_slices.append(i)
-        
-        # If no valid slices found, use middle slices as fallback
-        if len(valid_slices) == 0:
-            # Use middle 50% of slices as fallback
-            start_idx = depth // 4
-            end_idx = 3 * depth // 4
-            valid_slices = list(range(max(0, start_idx), min(depth, end_idx)))
-        
-        # Randomly select from valid slices
-        slice_idx = random.choice(valid_slices)
-        
-        # Extract 2D slice (already processed to 256x256 by the unified transform)
-        slice_2d = volume_tensor[:, :, slice_idx]  # (256, 256)
-        
-        # Convert to the appropriate number of channels
-        if self.output_channels == 1:
-            # Keep as single channel (grayscale)
-            slice_2d = slice_2d.unsqueeze(0)  # (1, 256, 256)
-        else:
-            # Repeat to create RGB channels
-            slice_2d = slice_2d.unsqueeze(0).repeat(self.output_channels, 1, 1)  # (output_channels, 256, 256)
-        
-        # Normalize to [-1, 1] range (standard for GAN training)
-        slice_2d = slice_2d * 2.0 - 1.0
-        
-        return slice_2d
+        return slice_2d        
 
     def __getitem__(self, index):
         """Return a data point and its metadata information.
@@ -262,32 +177,45 @@ class MonaiDataset(BaseDataset):
             A_paths (str) -- NIfTI file paths
             B_paths (str) -- NIfTI file paths
         """
-        # A域按顺序取，B域用取模或随机采样
-        A_path = self.A_paths[index % self.A_size]
-        # B域用取模或随机采样
-        if self.B_size < self.A_size:
-            B_index = index % self.B_size
+        index_A = index % self.num_A_volumes
+        if self.opt.serial_batches:
+            index_B = index % self.num_B_volumes
         else:
-            B_index = random.randint(0, self.B_size - 1)
-        B_path = self.B_paths[B_index]
-        A = self.load_and_extract_slice(A_path, 'A')
-        B = self.load_and_extract_slice(B_path, 'B')
-        # print(f'[rank {dist.get_rank()}] idx={index}  file={A_path}, {B_path}')
+            index_B = random.randint(0, self.num_B_volumes - 1)
+            
+        A_path = self.A_paths[index_A]
+        B_path = self.B_paths[index_B]
+        A = self.load_and_extract_slice(index_A, domain='A')
+        B = self.load_and_extract_slice(index_B, domain='B')
         return {"A": A, "B": B, "A_paths": A_path, "B_paths": B_path}
 
+    @property
+    def num_A_slices(self):
+        return len(getattr(self, "slice_list_A", []))
+    @property
+    def num_B_slices(self):
+        return len(getattr(self, "slice_list_B", []))
+    @property
+    def num_A_volumes(self):
+        return len(self.A_paths)
+    @property
+    def num_B_volumes(self):
+        return len(self.B_paths)
+    
     def __len__(self):
-        # 返回最大slice数，保证所有slice都能用上
-        return max(self.A_total_slices, self.B_total_slices)
+        return max(self.num_A_slices, self.num_B_slices)
     
 if __name__ == "__main__":
     # Simple test to verify dataset functionality
     class DummyOpt:
         def __init__(self):
             # self.dataroot = "/public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2D-SIEMENS-AERA-1.5T/"
-            self.dataroot = "/public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/"
+            self.dataroot = "/public/home_data/home/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/"
             # self.csv_path = "/public_bme2/bme-wangqian2/songhy2024/harmonization_mri/dataset/PVWMI_data.csv"
             self.phase = "train"
             self.max_dataset_size = float("inf")
+            self.pixel_dim = (1.0, 1.0, -1)
+            self.num_threads = 4
             
     opt = DummyOpt()
     dataset = MonaiDataset(opt)

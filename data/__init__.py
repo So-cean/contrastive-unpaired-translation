@@ -112,6 +112,8 @@ class CustomDatasetDataLoader():
             persistent_workers=True if int(opt.num_threads) > 0 else False,
             drop_last=True if opt.isTrain else False,
             worker_init_fn=_worker_init_fn if int(opt.num_threads) > 0 else None,
+            prefetch_factor=2,
+            multiprocessing_context='spawn' if opt.num_threads > 0 else None,
         )
         # check sampler
         print(f"DataLoader created with sampler={self.dataloader.sampler}, type={type(self.dataloader.sampler)}")

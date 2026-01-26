@@ -550,38 +550,30 @@ class PatchSampleF(nn.Module):
         init_net(self, self.init_type, self.init_gain, self.gpu_ids)
         self.mlp_init = True
 
+    @torch.no_grad()
     def _sample_foreground(self, feat, num_patches, real_A):
-        """
-        feat     : (B, C, H, W)  特征图
-        real_A   : (B, 1, H0, W0)  与feat对应的原始输入（或mask）
-        num_patches: int
-        return   : LongTensor  (<=num_patches,)  合法patch-id
-        """
-        B, C, H, W   = feat.shape
-        _, _, H0, W0 = real_A.shape
+        B, C, H, W = feat.shape
+        device = feat.device
+        total_pixels = H * W
 
-        # 1. 把原图插值到特征分辨率，生成前景mask
-        with torch.no_grad():
-            mask = (torch.nn.functional.interpolate(real_A, size=(H, W), mode='nearest') > 0).bool()  # (B,1,H,W)
+        mask = F.interpolate(real_A, size=(H, W), mode='nearest').clamp(-1, 1)  
+        mask_bin = (mask.squeeze(1) > -0.999).float()          # (B,H,W)
+        mask_flat = mask_bin.view(B, -1)                       # (B,H*W)
 
-        # 2. flatten 后拿到前景索引
-        mask_flat = mask.view(B, -1)          # (B, H*W)
-        fg_idx_all= torch.arange(H*W, device=feat.device).unsqueeze(0).expand_as(mask_flat)  # (B, H*W)
-        fg_idx_list= [fg_idx_all[b][mask_flat[b]] for b in range(B)]   # List[Tensor(n_fg)]
-
-        # 3. 在前景里随机采
-        patch_ids = []
+        patch_ids_list = []
         for b in range(B):
-            fg = fg_idx_list[b]                     # 当前样本所有前景id
-            if fg.numel() == 0:                     # 极端情况：全黑图
-                fg = torch.arange(H*W, device=feat.device)  # 退回到全局
-            perm = torch.randperm(fg.numel(), device=feat.device)
-            sel  = perm[:num_patches]                # 取前num_patches个
-            patch_ids.append(fg[sel])
-        # 4. 如果不足，用全局随机补齐（可选）
-        patch_ids = torch.cat(patch_ids)             # (<=B*num_patches,)
-        return patch_ids
-    
+            mb = mask_flat[b]                                  # (H*W,)
+            
+            weights = torch.ones(total_pixels, device=device)  # 初始化为全1（前景权重）
+            background_mask = (mb <= 0.5)  # 找出背景像素的索引
+            weights[background_mask] = 0.01
+            weights = weights / weights.sum()
+            idx = torch.multinomial(weights, min(num_patches, total_pixels), replacement=False)  
+
+            patch_ids_list.append(idx) 
+
+        return torch.cat(patch_ids_list)                       
+        
     def forward(self, feats, num_patches=64, patch_ids=None, real_A=None):
         """
         feats   : list of Tensor  多层特征
@@ -598,21 +590,23 @@ class PatchSampleF(nn.Module):
 
             if num_patches > 0:
                 if patch_ids is not None:
-                    pid = patch_ids[feat_id]
+                    patch_id = patch_ids[feat_id]
                 else:
                     # 关键：只在前景采样
-                    pid = self._sample_foreground(feat, num_patches, real_A)
-                x_sample = feat_reshape[:, pid, :].flatten(0, 1)      # (N, C)
+                    patch_id = self._sample_foreground(feat, num_patches, real_A)
+                x_sample = feat_reshape[:, patch_id, :].flatten(0, 1)      # (N, C)
             else:
-                x_sample = feat_reshape.flatten(0, 1)
-                pid = []
+                x_sample = feat_reshape
+                patch_id = []
 
             if self.use_mlp:
                 mlp = getattr(self, 'mlp_%d' % feat_id)
                 x_sample = mlp(x_sample)
-
+            return_ids.append(patch_id)
             x_sample = self.l2norm(x_sample)
-            return_ids.append(pid)
+            
+            if num_patches == 0:
+                x_sample = x_sample.permute(0, 2, 1).reshape([B, x_sample.shape[-1], H, W])
             return_feats.append(x_sample)
 
         return return_feats, return_ids

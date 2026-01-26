@@ -1,33 +1,33 @@
-Mon Jan 26 15:47:16 CST 2026
-top - 15:47:17 up 378 days, 16:25,  2 users,  load average: 14.28, 14.57, 17.19
-Tasks: 2163 total,   1 running, 2162 sleeping,   0 stopped,   0 zombie
-%Cpu(s):  1.4 us,  0.6 sy,  0.0 ni, 97.9 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
-MiB Mem : 1045781.+total, 432881.6 free, 148104.3 used, 464795.3 buff/cache
-MiB Swap:  55295.9 total,  32912.7 free,  22383.2 used. 733704.9 avail Mem 
+Mon Jan 26 15:49:13 CST 2026
+top - 15:49:13 up 378 days, 16:27,  2 users,  load average: 14.84, 14.84, 16.97
+Tasks: 2162 total,   1 running, 2161 sleeping,   0 stopped,   0 zombie
+%Cpu(s):  3.5 us,  0.8 sy,  0.0 ni, 95.7 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+MiB Mem : 1045781.+total, 432697.7 free, 148288.1 used, 464795.4 buff/cache
+MiB Swap:  55295.9 total,  32912.7 free,  22383.2 used. 733521.1 avail Mem 
 
     PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
- 904457 songhy2+  20   0 8201.4g   5.5g   3.0g S  39.1   0.5  10:10.13 python3.11
- 904458 songhy2+  20   0 8201.5g   5.5g   3.0g S  39.1   0.5  10:12.38 python3.11
- 904459 songhy2+  20   0 8201.5g   5.5g   3.0g S  39.1   0.5  10:15.73 python3.11
- 904461 songhy2+  20   0 8201.3g   5.5g   3.0g S  39.1   0.5  10:08.68 python3.11
- 904462 songhy2+  20   0 8201.7g   5.7g   3.0g S  39.1   0.6  10:14.84 python3.11
- 904464 songhy2+  20   0 8201.5g   5.5g   3.0g S  39.1   0.5  10:02.00 python3.11
- 904460 songhy2+  20   0 8201.3g   5.3g   3.0g S  34.8   0.5  10:22.54 python3.11
- 904463 songhy2+  20   0 8201.5g   5.5g   3.0g S  34.8   0.5  10:17.95 python3.11
- 912723 songhy2+  20   0  243840  16704   5440 R  17.4   0.0   0:00.08 top
- 879037 root       0 -20       0      0      0 I   8.7   0.0   1:00.84 kworker/u393:1-dev0_sq_send_wq
- 895297 root       0 -20       0      0      0 I   8.7   0.0   0:57.10 kworker/u393:9-dev0_sq_send_wq
- 907288 root       0 -20       0      0      0 I   8.7   0.0   0:41.19 kworker/u393:0-dev1_sq_send_wq
- 907459 root       0 -20       0      0      0 I   8.7   0.0   0:51.91 kworker/u393:2-dev5_sq_send_wq
- 907486 root       0 -20       0      0      0 I   8.7   0.0   0:52.87 kworker/u393:5-dev0_sq_send_wq
- 907487 root       0 -20       0      0      0 I   8.7   0.0   0:49.52 kworker/u393:6-dev0_sq_send_wq
- 907488 root       0 -20       0      0      0 I   8.7   0.0   0:55.34 kworker/u393:7-dev0_sq_send_wq
- 906763 songhy2+  20   0 4713664   3.4g   2.5g S   4.3   0.3   0:12.81 pt_data_worker
- 907485 root       0 -20       0      0      0 I   4.3   0.0   0:53.43 kworker/u393:4-dev0_sq_send_wq
- 908745 root       0 -20       0      0      0 I   4.3   0.0   0:37.20 kworker/u393:8-dev4_sq_send_wq
- 912702 songhy2+  20   0  162432  16960   6592 S   4.3   0.0   0:00.03 npu-smi
-      1 root      20   0  194176   9920   4864 S   0.0   0.0  47:04.20 systemd
+ 904457 songhy2+  20   0 8201.4g   5.5g   3.0g S  72.7   0.5  11:09.96 python3.11
+ 904459 songhy2+  20   0 8201.5g   5.5g   3.0g S  72.7   0.5  11:14.71 python3.11
+ 904461 songhy2+  20   0 8201.3g   5.5g   3.0g S  72.7   0.5  11:07.92 python3.11
+ 904462 songhy2+  20   0 8201.7g   5.7g   3.0g S  72.7   0.6  11:14.95 python3.11
+ 904458 songhy2+  20   0 8201.5g   5.5g   3.0g S  68.2   0.5  11:11.55 python3.11
+ 904460 songhy2+  20   0 8201.3g   5.3g   3.0g S  68.2   0.5  11:22.34 python3.11
+ 904463 songhy2+  20   0 8201.5g   5.5g   3.0g S  68.2   0.5  11:16.06 python3.11
+ 904464 songhy2+  20   0 8201.5g   5.5g   3.0g S  63.6   0.5  11:00.68 python3.11
+ 913272 songhy2+  20   0  243840  16704   5440 R  18.2   0.0   0:00.08 top
+ 907288 root       0 -20       0      0      0 I  13.6   0.0   0:47.97 kworker/u393:0-dev5_sq_send_wq
+ 907459 root       0 -20       0      0      0 I  13.6   0.0   0:59.09 kworker/u393:2-dev3_sq_send_wq
+ 907485 root       0 -20       0      0      0 I  13.6   0.0   0:59.40 kworker/u393:4-dev2_sq_send_wq
+ 908745 root       0 -20       0      0      0 I   9.1   0.0   0:44.24 kworker/u393:8-dev0_sq_send_wq
+ 428428 root      -2   0       0      0      0 D   4.5   0.0   1729:37 dev5_sq_task
+ 428575 root      -2   0       0      0      0 D   4.5   0.0   1679:32 dev7_sq_task
+ 428579 root      -2   0       0      0      0 D   4.5   0.0   1677:20 dev6_sq_task
+ 879037 root       0 -20       0      0      0 I   4.5   0.0   1:07.62 kworker/u393:1-dev4_sq_send_wq
+ 895297 root       0 -20       0      0      0 I   4.5   0.0   1:03.68 kworker/u393:9-dev6_sq_send_wq
+ 906759 songhy2+  20   0 4717888   3.4g   2.5g S   4.5   0.3   0:13.69 pt_data_worker
+ 907486 root       0 -20       0      0      0 I   4.5   0.0   0:59.16 kworker/u393:5-dev0_sq_send_wq
+ 907487 root       0 -20       0      0      0 I   4.5   0.0   0:56.44 kworker/u393:6-dev5_sq_send_wq
+ 907488 root       0 -20       0      0      0 I   4.5   0.0   1:02.15 kworker/u393:7-dev3_sq_send_wq
+      1 root      20   0  194176   9920   4864 S   0.0   0.0  47:04.21 systemd
       2 root      20   0       0      0      0 S   0.0   0.0   1:56.49 kthreadd
       3 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 rcu_gp
-      4 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 rcu_par_gp
-      6 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker/0:0H-events_highpri

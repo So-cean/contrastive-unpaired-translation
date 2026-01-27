@@ -1,33 +1,33 @@
-Tue Jan 27 11:40:34 CST 2026
-top - 11:40:35 up 379 days, 12:19,  2 users,  load average: 17.53, 25.01, 21.07
-Tasks: 1958 total,   1 running, 1957 sleeping,   0 stopped,   0 zombie
-%Cpu(s):  0.0 us,  0.1 sy,  0.0 ni, 99.8 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
-MiB Mem : 1045781.+total, 571907.2 free,  23134.9 used, 450739.0 buff/cache
-MiB Swap:  55295.9 total,  32988.7 free,  22307.2 used. 876826.9 avail Mem 
+Wed Jan 28 00:30:17 CST 2026
+top - 00:30:17 up 383 days,  5:28,  1 user,  load average: 9.08, 9.74, 10.05
+Tasks: 2013 total,   1 running, 2012 sleeping,   0 stopped,   0 zombie
+%Cpu(s):  0.1 us,  0.1 sy,  0.0 ni, 99.8 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+MiB Mem : 1045781.+total, 210430.1 free,  47285.0 used, 788066.1 buff/cache
+MiB Swap:  55295.9 total,      0.2 free,  55295.7 used. 819770.4 avail Mem 
 
     PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
-1372316 songhy2+  20   0  243648  16704   5440 R  14.3   0.0   0:00.06 top
- 428579 root      -2   0       0      0      0 D   4.8   0.0   1681:21 dev6_sq_task
-      1 root      20   0  194176   9920   4864 S   0.0   0.0  47:11.31 systemd
-      2 root      20   0       0      0      0 S   0.0   0.0   1:57.31 kthreadd
+2653529 songhy2+  20   0  243840  16704   5440 R  12.5   0.0   0:00.07 top
+      1 root      20   0  193984  12096   6976 S   0.0   0.0  54:32.55 systemd
+      2 root      20   0       0      0      0 S   0.0   0.0   2:41.58 kthreadd
       3 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 rcu_gp
       4 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 rcu_par_gp
       6 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker/0:0H-events_highpri
-      9 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 mm_percpu_wq
-     10 root      20   0       0      0      0 S   0.0   0.0 594:12.00 ksoftirqd/0
-     11 root      20   0       0      0      0 I   0.0   0.0 398:32.60 rcu_sched
+      9 root       0 -20       0      0      0 I   0.0   0.0   0:00.02 mm_percpu_wq
+     10 root      20   0       0      0      0 S   0.0   0.0   2476:02 ksoftirqd/0
+     11 root      20   0       0      0      0 I   0.0   0.0 710:20.30 rcu_sched
      12 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_bh
-     13 root      rt   0       0      0      0 S   0.0   0.0   0:23.42 migration/0
+     13 root      rt   0       0      0      0 S   0.0   0.0   0:34.92 migration/0
      14 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/0
      15 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/1
-     16 root      rt   0       0      0      0 S   0.0   0.0   0:20.79 migration/1
-     17 root      20   0       0      0      0 S   0.0   0.0  20:42.99 ksoftirqd/1
+     16 root      rt   0       0      0      0 S   0.0   0.0   0:30.77 migration/1
+     17 root      20   0       0      0      0 S   0.0   0.0  48:43.57 ksoftirqd/1
      19 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker/1:0H-events_highpri
      20 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/2
-     21 root      rt   0       0      0      0 S   0.0   0.0   0:18.84 migration/2
-     22 root      20   0       0      0      0 S   0.0   0.0   9:14.62 ksoftirqd/2
+     21 root      rt   0       0      0      0 S   0.0   0.0   0:27.61 migration/2
+     22 root      20   0       0      0      0 S   0.0   0.0  21:03.23 ksoftirqd/2
      24 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker/2:0H-events_highpri
      25 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/3
-     26 root      rt   0       0      0      0 S   0.0   0.0   0:19.29 migration/3
-     27 root      20   0       0      0      0 S   0.0   0.0   6:08.22 ksoftirqd/3
+     26 root      rt   0       0      0      0 S   0.0   0.0   0:26.91 migration/3
+     27 root      20   0       0      0      0 S   0.0   0.0  12:19.05 ksoftirqd/3
      29 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker/3:0H-events_highpri
+     30 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/4

@@ -141,25 +141,16 @@ class MonaiDataset(BaseDataset):
         
         print(f"Domain {domain} total valid slices: {len(slice_list)}")
 
-    def load_and_extract_slice(self, index, domain:str="A"):
-        """Load 3D NIfTI volume and extract a random 2D slice.
-        
-        Parameters:
-            domain (str): Domain identifier ('A' , 'B')
-            
-        Returns:
-            torch.Tensor: 2D slice tensor (output_channels, 256, 256) normalized to [-1, 1]
+    def load_and_extract_slice(self, volume_idx, z, domain:str="A"):
+        """Load 3D NIfTI volume (already cached via CacheDataset) and extract the specified 2D slice.
+        Returns a torch.Tensor: 2D slice tensor (output_channels, 256, 256) normalized to [-1, 1]
         """
-        slice_list = getattr(self, f"slice_list_{domain}")
-        slices_per_volume = getattr(self, f"slices_per_volume_{domain}")
         data_domain = getattr(self, f"data_{domain}")
-        volume_dict = data_domain[index]
-        image = volume_dict["image"] # (C, H, W, D)
-        valid_z = slices_per_volume[index]
-        z = np.random.choice(valid_z)
-            
-        slice_2d = image[..., z].as_tensor()  # (C, H, W)
-        
+        volume_dict = data_domain[volume_idx]
+        image = volume_dict["image"]  # (C, H, W, D) - may be torch.Tensor or numpy array
+
+        slice_2d = image[..., z].as_tensor()
+
         slice_2d = slice_2d.repeat(self.output_channels, 1, 1)  # (output_channels, 256, 256)
         slice_2d = slice_2d * 2.0 - 1.0  # Normalize to [-1, 1]      
         
@@ -177,16 +168,20 @@ class MonaiDataset(BaseDataset):
             A_paths (str) -- NIfTI file paths
             B_paths (str) -- NIfTI file paths
         """
-        index_A = index % self.num_A_volumes
+        # Work with slice-level indices so DistributedSampler and other samplers operate correctly
+        index_A = index % self.num_A_slices
         if self.opt.serial_batches:
-            index_B = index % self.num_B_volumes
+            index_B = index % self.num_B_slices
         else:
-            index_B = random.randint(0, self.num_B_volumes - 1)
-            
-        A_path = self.A_paths[index_A]
-        B_path = self.B_paths[index_B]
-        A = self.load_and_extract_slice(index_A, domain='A')
-        B = self.load_and_extract_slice(index_B, domain='B')
+            index_B = random.randint(0, self.num_B_slices - 1)
+
+        volume_idx_A, z_A = getattr(self, f"slice_list_A")[index_A]
+        volume_idx_B, z_B = getattr(self, f"slice_list_B")[index_B]
+
+        A_path = self.A_paths[volume_idx_A]
+        B_path = self.B_paths[volume_idx_B]
+        A = self.load_and_extract_slice(volume_idx_A, z_A, domain='A')
+        B = self.load_and_extract_slice(volume_idx_B, z_B, domain='B')
         return {"A": A, "B": B, "A_paths": A_path, "B_paths": B_path}
 
     @property
@@ -216,6 +211,10 @@ if __name__ == "__main__":
             self.max_dataset_size = float("inf")
             self.pixel_dim = (1.0, 1.0, -1)
             self.num_threads = 4
+            self.serial_batches = False
+            self.direction = 'AtoB'
+            self.input_nc = 1
+            self.output_nc = 1
             
     opt = DummyOpt()
     dataset = MonaiDataset(opt)

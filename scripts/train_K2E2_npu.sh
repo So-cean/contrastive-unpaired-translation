@@ -30,6 +30,31 @@ torchrun --nproc_per_node=8 train.py \
   --num_threads 8 \
   --n_epochs 50 \
   --n_epochs_decay 50 \
+  --lr 0.0005 \
+  --preprocess scale_width_and_crop \
+  --load_size 256 \
+  --display_id 0 \
+  --pixel_dim 1.0 1.0 -1 
+
+
+torchrun --nproc_per_node=1 train.py \
+  --dataroot /home_data/home/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/ \
+  --name CUT_monai_K2E2_npu_single \
+  --model cut \
+  --direction AtoB \
+  --no_dropout \
+  --no_flip \
+  --n_layers_D 3 \
+  --save_epoch_freq 10 \
+  --dataset_mode monai \
+  --batch_size 12 \
+  --input_nc 1 \
+  --output_nc 1 \
+  --ngf 96 \
+  --gan_mode lsgan \
+  --num_threads 8 \
+  --n_epochs 50 \
+  --n_epochs_decay 50 \
   --lr 0.0001 \
   --preprocess scale_width_and_crop \
   --load_size 256 \

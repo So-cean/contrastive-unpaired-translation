@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+from collections import Counter
 import time
 import os
+from numpy import diff
 import torch
 torch.autograd.set_detect_anomaly(True)
 
@@ -23,9 +25,9 @@ if shutil.which("npu-smi") and importlib.util.find_spec("torch_npu") is not None
     os.environ['HCCL_CONNECT_TIMEOUT'] = '120'
     
     # ========== 调试和日志 ==========
-    os.environ['ASCEND_GLOBAL_LOG_LEVEL'] = '1'  # DEBUG级别
-    os.environ['ASCEND_LAUNCH_BLOCKING'] = '1'  # 非阻塞模式
-    os.environ['NPU_DEBUG'] = '1'
+    # os.environ['ASCEND_GLOBAL_LOG_LEVEL'] = '1'  # DEBUG级别
+    # os.environ['ASCEND_LAUNCH_BLOCKING'] = '1'  # 非阻塞模式
+    # os.environ['NPU_DEBUG'] = '1'
 
 # -------------------- 0. 轮值杂货工具 --------------------
 class RankRoller:
@@ -34,7 +36,8 @@ class RankRoller:
         self.counter = 0
 
     def on_shift(self):
-        return self.counter % self.world_size
+        # return self.counter % self.world_size
+        return 0 # 暂时禁用轮值，全部由 rank0 执行
 
     def step(self):
         self.counter += 1
@@ -71,6 +74,90 @@ if __name__ == '__main__':
     optimize_time = 0.1
 
     for epoch in range(opt.epoch_count, opt.n_epochs + opt.n_epochs_decay + 1):
+        
+        # # ========== DEBUG DATA DISTRIBUTION (START) ==========
+        # if epoch == opt.epoch_count:  # Only check first epoch
+        #     print(f"\n{'='*80}", flush=True)
+        #     print(f"[Rank {rank}] DEBUG: Checking data distribution...", flush=True)
+        #     print(f"{'='*80}\n", flush=True)
+            
+        #     # Collect paths from first 30 batches
+        #     collected_paths_A = []
+        #     collected_paths_B = []
+            
+        #     batch_count = 0
+        #     for i, data in enumerate(dataset):
+        #         if batch_count >= 30:
+        #             break
+                
+        #         A_paths = data['A_paths'] if isinstance(data['A_paths'], list) else [data['A_paths']]
+        #         B_paths = data['B_paths'] if isinstance(data['B_paths'], list) else [data['B_paths']]
+                
+        #         collected_paths_A.extend(A_paths)
+        #         collected_paths_B.extend(B_paths)
+                
+        #         # Print first 3 batches
+        #         if batch_count < 3:
+        #             import os
+        #             filenames_A = [os.path.basename(p) for p in A_paths]
+        #             filenames_B = [os.path.basename(p) for p in B_paths]
+        #             print(f"[Rank {rank}] Batch {batch_count}:", flush=True)
+        #             print(f"  A: {filenames_A}", flush=True)
+        #             print(f"  B: {filenames_B}", flush=True)
+                
+        #         batch_count += 1
+            
+        #     # Analyze
+        #     unique_A = len(set(collected_paths_A))
+        #     unique_B = len(set(collected_paths_B))
+        #     total_A = len(collected_paths_A)
+        #     total_B = len(collected_paths_B)
+            
+        #     counter_A = Counter(collected_paths_A)
+        #     counter_B = Counter(collected_paths_B)
+        #     max_repeat_A = max(counter_A.values()) if counter_A else 0
+        #     max_repeat_B = max(counter_B.values()) if counter_B else 0
+            
+        #     print(f"\n[Rank {rank}] === SUMMARY after {batch_count} batches ===", flush=True)
+        #     print(f"Domain A:", flush=True)
+        #     print(f"  Total samples: {total_A}", flush=True)
+        #     print(f"  Unique files: {unique_A}", flush=True)
+        #     print(f"  Repetition ratio: {total_A/unique_A if unique_A > 0 else 0:.2f}x", flush=True)
+        #     print(f"  Max repeats of one file: {max_repeat_A}", flush=True)
+            
+        #     print(f"Domain B:", flush=True)
+        #     print(f"  Total samples: {total_B}", flush=True)
+        #     print(f"  Unique files: {unique_B}", flush=True)
+        #     print(f"  Repetition ratio: {total_B/unique_B if unique_B > 0 else 0:.2f}x", flush=True)
+        #     print(f"  Max repeats of one file: {max_repeat_B}", flush=True)
+            
+        #     # Warning flags
+        #     if total_A / unique_A > 3:
+        #         print(f"\n⚠️  [Rank {rank}] HIGH REPETITION IN A! Likely index collision.", flush=True)
+        #     if total_B / unique_B > 3:
+        #         print(f"\n⚠️  [Rank {rank}] HIGH REPETITION IN B! Likely index collision.", flush=True)
+            
+        #     # Show most common files
+        #     print(f"\n[Rank {rank}] Most frequently seen A files:", flush=True)
+        #     for path, count in counter_A.most_common(5):
+        #         print(f"  {count}x: {os.path.basename(path)}", flush=True)
+            
+        #     print(f"\n[Rank {rank}] Most frequently seen B files:", flush=True)
+        #     for path, count in counter_B.most_common(5):
+        #         print(f"  {count}x: {os.path.basename(path)}", flush=True)
+            
+        #     print(f"\n{'='*80}\n", flush=True)
+            
+        #     if distributed:
+        #         torch.distributed.barrier()
+            
+        #     # IMPORTANT: Reset dataset iterator after debug collection
+        #     # Need to break and restart the epoch properly
+        #     print(f"[Rank {rank}] Debug complete. Restarting epoch...\n", flush=True)
+            
+        # # ========== DEBUG DATA DISTRIBUTION (END) ==========
+        
+        
         epoch_start_time = time.time()
         iter_data_time = time.time()
         epoch_iter = 0
@@ -92,6 +179,8 @@ if __name__ == '__main__':
                 model.data_dependent_initialize(data)
                 model.setup(opt)
                 model.parallelize(force_rewrap=True)  # 强制重新包装，确保 netF 的 MLP 被 DDP 包装
+                if distributed:
+                    torch.distributed.barrier()  # ← ADD THIS
 
             model.set_input(data)
             model.optimize_parameters()
@@ -138,7 +227,8 @@ if __name__ == '__main__':
 
         print(f'End of epoch {epoch} / {opt.n_epochs + opt.n_epochs_decay}  Time: {time.time() - epoch_start_time:.0f} sec')
         model.update_learning_rate()
-        torch.distributed.barrier()  
+        if distributed:
+            torch.distributed.barrier()  
 
     if distributed:
         dist.destroy_process_group()

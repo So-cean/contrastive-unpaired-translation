@@ -34,6 +34,8 @@ def get_filter(filt_size=3):
     return filt
 
 
+
+
 class Downsample(nn.Module):
     def __init__(self, channels, pad_type='reflect', filt_size=3, stride=2, pad_off=0):
         super(Downsample, self).__init__()
@@ -57,7 +59,8 @@ class Downsample(nn.Module):
             else:
                 return self.pad(inp)[:, :, ::self.stride, ::self.stride]
         else:
-            return F.conv2d(self.pad(inp), self.filt, stride=self.stride, groups=inp.shape[1])
+            # 使用 clone().detach() 创建独立副本，避免梯度版本冲突
+            return F.conv2d(self.pad(inp), self.filt.clone().detach(), stride=self.stride, groups=inp.shape[1])
 
 
 class Upsample2(nn.Module):
@@ -86,7 +89,8 @@ class Upsample(nn.Module):
         self.pad = get_pad_layer(pad_type)([1, 1, 1, 1])
 
     def forward(self, inp):
-        ret_val = F.conv_transpose2d(self.pad(inp), self.filt, stride=self.stride, padding=1 + self.pad_size, groups=inp.shape[1])[:, :, 1:, 1:]
+        # 使用 clone().detach() 创建独立副本，避免梯度版本冲突
+        ret_val = F.conv_transpose2d(self.pad(inp), self.filt.clone().detach(), stride=self.stride, padding=1 + self.pad_size, groups=inp.shape[1])[:, :, 1:, 1:]
         if(self.filt_odd):
             return ret_val
         else:
@@ -478,7 +482,7 @@ class ReshapeF(nn.Module):
 
     def forward(self, x):
         x = self.model(x)
-        x_reshape = x.permute(0, 2, 3, 1).flatten(0, 2)
+        x_reshape = x.permute(0, 2, 3, 1).contiguous().flatten(0, 2)
         return self.l2norm(x_reshape)
 
 
@@ -550,98 +554,113 @@ class PatchSampleF(nn.Module):
         init_net(self, self.init_type, self.init_gain, self.gpu_ids)
         self.mlp_init = True
 
-    @torch.no_grad()
-    def _sample_foreground(self, feat, num_patches, real_A):
-        B, C, H, W = feat.shape
-        device = feat.device
-        total_pixels = H * W
+    # @torch.no_grad()
+    # def _sample_foreground(self, feat, num_patches, real_A):
+    #     B, C, H, W = feat.shape
+    #     device = feat.device
+    #     total_pixels = H * W
 
-        mask = F.interpolate(real_A, size=(H, W), mode='nearest').clamp(-1, 1)  
-        mask_bin = (mask.squeeze(1) > -0.999).float()          # (B,H,W)
-        mask_flat = mask_bin.view(B, -1)                       # (B,H*W)
-
-        patch_ids_list = []
-        for b in range(B):
-            mb = mask_flat[b]                                  # (H*W,)
-            
-            weights = torch.ones(total_pixels, device=device)  # 初始化为全1（前景权重）
-            background_mask = (mb <= 0.5)  # 找出背景像素的索引
-            weights[background_mask] = 0.01
-            weights = weights / weights.sum()
-            idx = torch.multinomial(weights, min(num_patches, total_pixels), replacement=False)  
-
-            patch_ids_list.append(idx) 
-
-        return torch.cat(patch_ids_list)                       
+    #     mask = F.interpolate(real_A, size=(H, W), mode='nearest').clamp(-1, 1)  # (B,1,H,W)
         
-    def forward(self, feats, num_patches=64, patch_ids=None, real_A=None):
-        """
-        feats   : list of Tensor  多层特征
-        real_A  : Tensor (B,1,H0,W0)  原始输入，用于生成前景mask
-        """
-        return_ids  = []
-        return_feats= []
-        if self.use_mlp and not self.mlp_init:
-            self.create_mlp(feats)
-
-        for feat_id, feat in enumerate(feats):
-            B, C, H, W = feat.shape
-            feat_reshape = feat.permute(0, 2, 3, 1).flatten(1, 2)   # (B, H*W, C)
-
-            if num_patches > 0:
-                if patch_ids is not None:
-                    patch_id = patch_ids[feat_id]
-                else:
-                    # 关键：只在前景采样
-                    patch_id = self._sample_foreground(feat, num_patches, real_A)
-                x_sample = feat_reshape[:, patch_id, :].flatten(0, 1)      # (N, C)
-            else:
-                x_sample = feat_reshape
-                patch_id = []
-
-            if self.use_mlp:
-                mlp = getattr(self, 'mlp_%d' % feat_id)
-                x_sample = mlp(x_sample)
-            return_ids.append(patch_id)
-            x_sample = self.l2norm(x_sample)
+    #     # 更安全的mask计算
+    #     mask_bin = torch.where(mask.squeeze(1) > -0.999, 
+    #                         torch.tensor(1.0, device=device), 
+    #                         torch.tensor(0.0, device=device))
+        
+    #     mask_flat = mask_bin.view(B, -1)
+        
+    #     patch_ids_list = []
+    #     for b in range(B):
+    #         mb = mask_flat[b]
             
-            if num_patches == 0:
-                x_sample = x_sample.permute(0, 2, 1).reshape([B, x_sample.shape[-1], H, W])
-            return_feats.append(x_sample)
-
-        return return_feats, return_ids
-    
-    # def forward(self, feats, num_patches=64, patch_ids=None):
-    #     return_ids = []
-    #     return_feats = []
+    #         # 方法1：简化权重计算，避免大规模布尔索引
+    #         # 直接计算权重，不用布尔索引
+    #         weights = mb * 0.99 + 0.01  # 前景~1.0，背景~0.01
+            
+    #         # 归一化
+    #         weight_sum = weights.sum()
+    #         if weight_sum <= 0:
+    #             # 如果全为背景，使用均匀分布
+    #             weights = torch.ones_like(weights) / total_pixels
+    #         else:
+    #             weights = weights / weight_sum
+            
+    #         # 采样
+    #         idx = torch.multinomial(weights, 
+    #                             min(num_patches, total_pixels), 
+    #                             replacement=False)
+    #         patch_ids_list.append(idx)
+        
+    #     return torch.cat(patch_ids_list)      
+            
+    # def forward(self, feats, num_patches=64, patch_ids=None, real_A=None):
+    #     """
+    #     feats   : list of Tensor  多层特征
+    #     real_A  : Tensor (B,1,H0,W0)  原始输入，用于生成前景mask
+    #     """
+    #     return_ids  = []
+    #     return_feats= []
     #     if self.use_mlp and not self.mlp_init:
     #         self.create_mlp(feats)
+
     #     for feat_id, feat in enumerate(feats):
-    #         B, H, W = feat.shape[0], feat.shape[2], feat.shape[3]
-    #         feat_reshape = feat.permute(0, 2, 3, 1).flatten(1, 2)
+    #         B, C, H, W = feat.shape
+    #         feat_reshape = feat.permute(0, 2, 3, 1).flatten(1, 2)   # (B, H*W, C)
+
     #         if num_patches > 0:
     #             if patch_ids is not None:
     #                 patch_id = patch_ids[feat_id]
     #             else:
-    #                 # torch.randperm produces cudaErrorIllegalAddress for newer versions of PyTorch. https://github.com/taesungp/contrastive-unpaired-translation/issues/83
-    #                 #patch_id = torch.randperm(feat_reshape.shape[1], device=feats[0].device)
-    #                 patch_id = np.random.permutation(feat_reshape.shape[1])
-    #                 patch_id = patch_id[:int(min(num_patches, patch_id.shape[0]))]  # .to(patch_ids.device)
-    #             patch_id = torch.tensor(patch_id, dtype=torch.long, device=feat.device)
-    #             x_sample = feat_reshape[:, patch_id, :].flatten(0, 1)  # reshape(-1, x.shape[1])
+    #                 # 关键：只在前景采样
+    #                 patch_id = self._sample_foreground(feat, num_patches, real_A)
+    #             x_sample = feat_reshape[:, patch_id, :].flatten(0, 1)      # (N, C)
     #         else:
     #             x_sample = feat_reshape
     #             patch_id = []
+
     #         if self.use_mlp:
     #             mlp = getattr(self, 'mlp_%d' % feat_id)
     #             x_sample = mlp(x_sample)
     #         return_ids.append(patch_id)
     #         x_sample = self.l2norm(x_sample)
-
+            
     #         if num_patches == 0:
     #             x_sample = x_sample.permute(0, 2, 1).reshape([B, x_sample.shape[-1], H, W])
     #         return_feats.append(x_sample)
+
     #     return return_feats, return_ids
+    
+    def forward(self, feats, num_patches=64, patch_ids=None, real_A=None):
+        return_ids = []
+        return_feats = []
+        if self.use_mlp and not self.mlp_init:
+            self.create_mlp(feats)
+        for feat_id, feat in enumerate(feats):
+            B, H, W = feat.shape[0], feat.shape[2], feat.shape[3]
+            feat_reshape = feat.permute(0, 2, 3, 1).contiguous().flatten(1, 2)
+            if num_patches > 0:
+                if patch_ids is not None:
+                    patch_id = patch_ids[feat_id]
+                else:
+                    # torch.randperm produces cudaErrorIllegalAddress for newer versions of PyTorch. https://github.com/taesungp/contrastive-unpaired-translation/issues/83
+                    #patch_id = torch.randperm(feat_reshape.shape[1], device=feats[0].device)
+                    patch_id = np.random.permutation(feat_reshape.shape[1])
+                    patch_id = patch_id[:int(min(num_patches, patch_id.shape[0]))]  # .to(patch_ids.device)
+                patch_id = torch.tensor(patch_id, dtype=torch.long, device=feat.device)
+                x_sample = feat_reshape[:, patch_id, :].flatten(0, 1)  # reshape(-1, x.shape[1])
+            else:
+                x_sample = feat_reshape
+                patch_id = []
+            if self.use_mlp:
+                mlp = getattr(self, 'mlp_%d' % feat_id)
+                x_sample = mlp(x_sample)
+            return_ids.append(patch_id)
+            x_sample = self.l2norm(x_sample)
+
+            if num_patches == 0:
+                x_sample = x_sample.permute(0, 2, 1).reshape([B, x_sample.shape[-1], H, W])
+            return_feats.append(x_sample)
+        return return_feats, return_ids
 
 
 class G_Resnet(nn.Module):

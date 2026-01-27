@@ -100,7 +100,11 @@ class CustomDatasetDataLoader():
         # Use DistributedSampler when running under torch.distributed
         self.sampler = None
         if torch.distributed.is_available() and torch.distributed.is_initialized():
-            self.sampler = torch.utils.data.distributed.DistributedSampler(self.dataset, shuffle=(not opt.serial_batches))
+            self.sampler = torch.utils.data.distributed.DistributedSampler(
+                self.dataset, 
+                shuffle=(not opt.serial_batches),
+                drop_last=True  # 确保所有 rank 的样本数一致
+            )
             
         self.dataloader = torch.utils.data.DataLoader(
             self.dataset,
@@ -110,7 +114,7 @@ class CustomDatasetDataLoader():
             num_workers=int(opt.num_threads),
             pin_memory=True,
             persistent_workers=True if int(opt.num_threads) > 0 else False,
-            drop_last=True if opt.isTrain else False,
+            drop_last=True,  # 始终 drop_last，确保所有 rank batch 数一致
             worker_init_fn=_worker_init_fn if int(opt.num_threads) > 0 else None,
             prefetch_factor=2,
             multiprocessing_context='spawn' if opt.num_threads > 0 else None,
@@ -147,6 +151,7 @@ class CustomDatasetDataLoader():
     def __iter__(self):
         """Return a batch of data"""
         for i, data in enumerate(self.dataloader):
-            if i * self.opt.batch_size >= self.opt.max_dataset_size:
+            # 在 DDP 模式下不要截断，让所有 rank 迭代相同次数
+            if self.sampler is None and i * self.opt.batch_size >= self.opt.max_dataset_size:
                 break
             yield data

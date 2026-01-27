@@ -110,7 +110,9 @@ class CUTModel(BaseModel):
             # 简单 3×3 sobel 核
             kernel_x = torch.tensor([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]],
                                     dtype=x.dtype, device=x.device).view(1, 1, 3, 3)
-            kernel_y = kernel_x.transpose(2, 3)
+            # 创建独立的 kernel_y 张量，而不是对 kernel_x 进行 transpose 操作
+            kernel_y = torch.tensor([[-1, -2, -1], [0, 0, 0], [1, 2, 1]],
+                                    dtype=x.dtype, device=x.device).view(1, 1, 3, 3)
             gx = F.conv2d(x, kernel_x, padding=1)
             gy = F.conv2d(x, kernel_y, padding=1)
             return gx, gy
@@ -129,10 +131,15 @@ class CUTModel(BaseModel):
         self.set_input(data)
         self.real_A = self.real_A[:bs_per_gpu]
         self.real_B = self.real_B[:bs_per_gpu]
-        self.forward()                     # compute fake images: G(A)
+        
+        with torch.no_grad():
+            self.forward()                     # compute fake images: G(A)
+            # Just need to compute losses to trigger MLP creation, no actual gradient updates needed
+            if self.opt.isTrain:
+                _ = self.compute_D_loss()
+                _ = self.compute_G_loss()
+        
         if self.opt.isTrain:
-            self.compute_D_loss().backward()                  # calculate gradients for D
-            self.compute_G_loss().backward()                   # calculate graidents for G
             if self.opt.lambda_NCE > 0.0:
                 self.optimizer_F = torch.optim.Adam(self.netF.parameters(), lr=self.opt.lr, betas=(self.opt.beta1, self.opt.beta2))
                 self.optimizers.append(self.optimizer_F)
@@ -223,7 +230,9 @@ class CUTModel(BaseModel):
             loss_NCE_both = (self.loss_NCE + self.loss_NCE_Y) * 0.5
         else:
             loss_NCE_both = self.loss_NCE
-            
+        
+        self.loss_SSIM = 0.0
+        self.loss_Grad = 0.0
         if self.opt.lambda_SSIM > 0:
             self.loss_SSIM = self.compute_ssim_loss(self.real_A, self.fake_B) * self.opt.lambda_SSIM
 

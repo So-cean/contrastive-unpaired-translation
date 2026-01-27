@@ -119,10 +119,20 @@ class BaseModel(ABC):
                         device_id = self.opt.gpu_ids[0]
                     if device_id is not None:
                         net.to(device_id)
-                        net = torch.nn.parallel.DistributedDataParallel(net, device_ids=[device_id], output_device=device_id, broadcast_buffers=False)
+                        net = torch.nn.parallel.DistributedDataParallel(
+                            net, 
+                            device_ids=[device_id], 
+                            output_device=device_id, 
+                            broadcast_buffers=False,
+                            find_unused_parameters=False  # 避免额外的同步开销
+                        )
                     else:
                         net.to(self.device)
-                        net = torch.nn.parallel.DistributedDataParallel(net)
+                        net = torch.nn.parallel.DistributedDataParallel(
+                            net,
+                            broadcast_buffers=False,
+                            find_unused_parameters=False
+                        )
                     setattr(self, 'net' + name, net)
                 else:
                     if len(self.opt.gpu_ids) > 1:

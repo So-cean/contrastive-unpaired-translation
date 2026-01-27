@@ -10,7 +10,16 @@ import torch
 from pathlib import Path
 from options.test_options import TestOptions
 from test_monai import MonaiTester, MONAI_AVAILABLE
-
+import importlib
+import shutil
+if shutil.which("npu-smi") and importlib.util.find_spec("torch_npu") is not None:
+    import torch_npu
+    from torch_npu.contrib import transfer_to_npu
+    torch.npu.set_compile_mode(jit_compile=False)
+    torch.npu.config.allow_internal_format = False
+    os.environ['HCCL_EXEC_TIMEOUT'] = '120'  
+    os.environ['HCCL_CONNECT_TIMEOUT'] = '120'
+    
 def count_nii_files(dataroot, phase, direction):
     # 根据 direction 选择主域
     if direction == 'AtoB':

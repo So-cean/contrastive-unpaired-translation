@@ -123,6 +123,17 @@ class BaseModel(ABC):
                 if is_wrapped and force_rewrap:
                     net = net.module
                 
+                # 检查是否有需要梯度的参数，如果没有则跳过 DDP 包装
+                has_trainable_params = any(p.requires_grad for p in net.parameters())
+                if not has_trainable_params:
+                    # 只移动到设备，不用 DDP 包装
+                    if len(self.opt.gpu_ids) > 0:
+                        net.to(self.opt.gpu_ids[0])
+                    else:
+                        net.to(self.device)
+                    setattr(self, 'net' + name, net)
+                    continue
+                
                 if use_ddp:
                     # wrap with DistributedDataParallel on single device
                     device_id = None

@@ -47,9 +47,8 @@ class Downsample(nn.Module):
         self.off = int((self.stride - 1) / 2.)
         self.channels = channels
 
-        # 不使用 register_buffer，直接存储为普通属性
         filt = get_filter(filt_size=self.filt_size)
-        self.filt_weight = filt[None, None, :, :].repeat((self.channels, 1, 1, 1))
+        self.register_buffer('filt', filt[None, None, :, :].repeat((self.channels, 1, 1, 1)))
 
         self.pad = get_pad_layer(pad_type)(self.pad_sizes)
 
@@ -60,45 +59,34 @@ class Downsample(nn.Module):
             else:
                 return self.pad(inp)[:, :, ::self.stride, ::self.stride]
         else:
-            # 每次 forward 时将权重移到正确的设备和数据类型
-            filt = self.filt_weight.to(inp.device, inp.dtype)
-            return F.conv2d(self.pad(inp), filt, stride=self.stride, groups=inp.shape[1])
+            # 使用 clone().detach() 创建独立副本，避免梯度版本冲突
+            return F.conv2d(self.pad(inp), self.filt.clone().detach(), stride=self.stride, groups=inp.shape[1])
 
 
 class Upsample2(nn.Module):
-    def __init__(self, scale_factor, mode='nearest'):
+    """使用双线性插值的上采样，避免棋盘格伪影"""
+    def __init__(self, scale_factor, mode='bilinear'):
         super().__init__()
         self.factor = scale_factor
         self.mode = mode
 
     def forward(self, x):
-        return torch.nn.functional.interpolate(x, scale_factor=self.factor, mode=self.mode)
+        return F.interpolate(x, scale_factor=self.factor, mode='bilinear', align_corners=False)
 
 
 class Upsample(nn.Module):
+    """使用双线性插值的上采样，避免棋盘格伪影
+    
+    原始实现使用 conv_transpose2d，在 NPU 上容易产生棋盘格伪影。
+    改为使用双线性插值，这是业界公认的最佳实践。
+    参考: https://distill.pub/2016/deconv-checkerboard/
+    """
     def __init__(self, channels, pad_type='repl', filt_size=4, stride=2):
         super(Upsample, self).__init__()
-        self.filt_size = filt_size
-        self.filt_odd = np.mod(filt_size, 2) == 1
-        self.pad_size = int((filt_size - 1) / 2)
         self.stride = stride
-        self.off = int((self.stride - 1) / 2.)
-        self.channels = channels
-
-        # 不使用 register_buffer，直接存储为普通属性
-        filt = get_filter(filt_size=self.filt_size) * (stride**2)
-        self.filt_weight = filt[None, None, :, :].repeat((self.channels, 1, 1, 1))
-
-        self.pad = get_pad_layer(pad_type)([1, 1, 1, 1])
 
     def forward(self, inp):
-        # 每次 forward 时将权重移到正确的设备和数据类型
-        filt = self.filt_weight.to(inp.device, inp.dtype)
-        ret_val = F.conv_transpose2d(self.pad(inp), filt, stride=self.stride, padding=1 + self.pad_size, groups=inp.shape[1])[:, :, 1:, 1:]
-        if(self.filt_odd):
-            return ret_val
-        else:
-            return ret_val[:, :, :-1, :-1]
+        return F.interpolate(inp, scale_factor=self.stride, mode='bilinear', align_corners=False)
 
 
 def get_pad_layer(pad_type):
@@ -214,10 +202,9 @@ def init_net(net, init_type='normal', init_gain=0.02, gpu_ids=[], debug=False, i
     Return an initialized network.
     """
     if len(gpu_ids) > 0:
-        assert(torch.cuda.is_available())
+        # 兼容 NPU 和 GPU：不检查 cuda.is_available()，直接移动到设备
+        # transfer_to_npu 会自动将 .to(cuda_device) 转换为 .to(npu_device)
         net.to(gpu_ids[0])
-        # if not amp:
-        # net = torch.nn.DataParallel(net, gpu_ids)  # multi-GPUs for non-AMP training
     if initialize_weights:
         init_weights(net, init_type, init_gain=init_gain, debug=debug)
     return net
@@ -552,88 +539,13 @@ class PatchSampleF(nn.Module):
         for mlp_id, feat in enumerate(feats):
             input_nc = feat.shape[1]
             mlp = nn.Sequential(*[nn.Linear(input_nc, self.nc), nn.ReLU(), nn.Linear(self.nc, self.nc)])
-            if len(self.gpu_ids) > 0:
-                mlp.cuda()
+            # 使用 feat.device 确保在正确的设备上（NPU 或 GPU）
+            mlp = mlp.to(feat.device)
             setattr(self, 'mlp_%d' % mlp_id, mlp)
-        init_net(self, self.init_type, self.init_gain, self.gpu_ids)
+        # 只初始化权重，不移动设备（已经在正确设备上了）
+        init_weights(self, self.init_type, self.init_gain)
         self.mlp_init = True
 
-    # @torch.no_grad()
-    # def _sample_foreground(self, feat, num_patches, real_A):
-    #     B, C, H, W = feat.shape
-    #     device = feat.device
-    #     total_pixels = H * W
-
-    #     mask = F.interpolate(real_A, size=(H, W), mode='nearest').clamp(-1, 1)  # (B,1,H,W)
-        
-    #     # 更安全的mask计算
-    #     mask_bin = torch.where(mask.squeeze(1) > -0.999, 
-    #                         torch.tensor(1.0, device=device), 
-    #                         torch.tensor(0.0, device=device))
-        
-    #     mask_flat = mask_bin.view(B, -1)
-        
-    #     patch_ids_list = []
-    #     for b in range(B):
-    #         mb = mask_flat[b]
-            
-    #         # 方法1：简化权重计算，避免大规模布尔索引
-    #         # 直接计算权重，不用布尔索引
-    #         weights = mb * 0.99 + 0.01  # 前景~1.0，背景~0.01
-            
-    #         # 归一化
-    #         weight_sum = weights.sum()
-    #         if weight_sum <= 0:
-    #             # 如果全为背景，使用均匀分布
-    #             weights = torch.ones_like(weights) / total_pixels
-    #         else:
-    #             weights = weights / weight_sum
-            
-    #         # 采样
-    #         idx = torch.multinomial(weights, 
-    #                             min(num_patches, total_pixels), 
-    #                             replacement=False)
-    #         patch_ids_list.append(idx)
-        
-    #     return torch.cat(patch_ids_list)      
-            
-    # def forward(self, feats, num_patches=64, patch_ids=None, real_A=None):
-    #     """
-    #     feats   : list of Tensor  多层特征
-    #     real_A  : Tensor (B,1,H0,W0)  原始输入，用于生成前景mask
-    #     """
-    #     return_ids  = []
-    #     return_feats= []
-    #     if self.use_mlp and not self.mlp_init:
-    #         self.create_mlp(feats)
-
-    #     for feat_id, feat in enumerate(feats):
-    #         B, C, H, W = feat.shape
-    #         feat_reshape = feat.permute(0, 2, 3, 1).flatten(1, 2)   # (B, H*W, C)
-
-    #         if num_patches > 0:
-    #             if patch_ids is not None:
-    #                 patch_id = patch_ids[feat_id]
-    #             else:
-    #                 # 关键：只在前景采样
-    #                 patch_id = self._sample_foreground(feat, num_patches, real_A)
-    #             x_sample = feat_reshape[:, patch_id, :].flatten(0, 1)      # (N, C)
-    #         else:
-    #             x_sample = feat_reshape
-    #             patch_id = []
-
-    #         if self.use_mlp:
-    #             mlp = getattr(self, 'mlp_%d' % feat_id)
-    #             x_sample = mlp(x_sample)
-    #         return_ids.append(patch_id)
-    #         x_sample = self.l2norm(x_sample)
-            
-    #         if num_patches == 0:
-    #             x_sample = x_sample.permute(0, 2, 1).reshape([B, x_sample.shape[-1], H, W])
-    #         return_feats.append(x_sample)
-
-    #     return return_feats, return_ids
-    
     def forward(self, feats, num_patches=64, patch_ids=None, real_A=None):
         return_ids = []
         return_feats = []
@@ -1333,26 +1245,30 @@ class UnetSkipConnectionBlock(nn.Module):
         uprelu = nn.ReLU(inplace=False)
         upnorm = norm_layer(outer_nc)
 
+        # 使用双线性插值 + Conv 代替 ConvTranspose2d，避免棋盘格伪影
         if outermost:
-            upconv = nn.ConvTranspose2d(inner_nc * 2, outer_nc,
-                                        kernel_size=4, stride=2,
-                                        padding=1)
+            # 上采样：bilinear + conv
+            up = [uprelu,
+                  nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
+                  nn.Conv2d(inner_nc * 2, outer_nc, kernel_size=3, stride=1, padding=1),
+                  nn.Tanh()]
             down = [downconv]
-            up = [uprelu, upconv, nn.Tanh()]
             model = down + [submodule] + up
         elif innermost:
-            upconv = nn.ConvTranspose2d(inner_nc, outer_nc,
-                                        kernel_size=4, stride=2,
-                                        padding=1, bias=use_bias)
+            # 上采样：bilinear + conv
+            up = [uprelu,
+                  nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
+                  nn.Conv2d(inner_nc, outer_nc, kernel_size=3, stride=1, padding=1, bias=use_bias),
+                  upnorm]
             down = [downrelu, downconv]
-            up = [uprelu, upconv, upnorm]
             model = down + up
         else:
-            upconv = nn.ConvTranspose2d(inner_nc * 2, outer_nc,
-                                        kernel_size=4, stride=2,
-                                        padding=1, bias=use_bias)
+            # 上采样：bilinear + conv
+            up = [uprelu,
+                  nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
+                  nn.Conv2d(inner_nc * 2, outer_nc, kernel_size=3, stride=1, padding=1, bias=use_bias),
+                  upnorm]
             down = [downrelu, downconv, downnorm]
-            up = [uprelu, upconv, upnorm]
 
             if use_dropout:
                 model = down + [submodule] + up + [nn.Dropout(0.5)]

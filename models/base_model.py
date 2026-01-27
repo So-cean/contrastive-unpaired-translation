@@ -135,6 +135,7 @@ class BaseModel(ABC):
                     continue
                 
                 if use_ddp:
+                    net = torch.nn.SyncBatchNorm.convert_sync_batchnorm(net)
                     # wrap with DistributedDataParallel on single device
                     device_id = None
                     if len(self.opt.gpu_ids) > 0:
@@ -145,14 +146,14 @@ class BaseModel(ABC):
                             net, 
                             device_ids=[device_id], 
                             output_device=device_id, 
-                            broadcast_buffers=False,
+                            broadcast_buffers=True,
                             find_unused_parameters=False
                         )
                     else:
                         net.to(self.device)
                         net = torch.nn.parallel.DistributedDataParallel(
                             net,
-                            broadcast_buffers=False,
+                            broadcast_buffers=True,
                             find_unused_parameters=False
                         )
                     setattr(self, 'net' + name, net)

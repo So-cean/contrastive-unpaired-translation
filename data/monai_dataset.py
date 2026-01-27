@@ -6,7 +6,6 @@ import glob
 from networkx import volume
 import numpy as np
 import nibabel as nib
-from regex import F
 import torch
 from collections import OrderedDict
 import pandas as pd
@@ -20,7 +19,6 @@ from data.base_dataset import BaseDataset
 
 
 import monai.transforms as monai_transforms
-
 from monai.data import CacheDataset
 
 

@@ -127,6 +127,8 @@ class CUTModel(BaseModel):
         initialized at the first feedforward pass with some input images.
         Please also see PatchSampleF.create_mlp(), which is called at the first forward() call.
         """
+        import torch.distributed as dist
+        
         bs_per_gpu = data["A"].size(0) // max(len(self.opt.gpu_ids), 1)
         self.set_input(data)
         self.real_A = self.real_A[:bs_per_gpu]
@@ -138,6 +140,12 @@ class CUTModel(BaseModel):
             if self.opt.isTrain:
                 _ = self.compute_D_loss()
                 _ = self.compute_G_loss()
+        
+        # 关键：在 DDP 模式下，同步 netF 的参数，确保所有 rank 使用相同的初始化
+        if dist.is_available() and dist.is_initialized():
+            # 从 rank 0 广播 netF 的参数到所有其他 rank
+            for param in self.netF.parameters():
+                dist.broadcast(param.data, src=0)
         
         if self.opt.isTrain:
             if self.opt.lambda_NCE > 0.0:

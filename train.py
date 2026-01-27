@@ -91,7 +91,7 @@ if __name__ == '__main__':
             if epoch == opt.epoch_count and i == 0:
                 model.data_dependent_initialize(data)
                 model.setup(opt)
-                model.parallelize()
+                model.parallelize(force_rewrap=True)  # 强制重新包装，确保 netF 的 MLP 被 DDP 包装
 
             model.set_input(data)
             model.optimize_parameters()

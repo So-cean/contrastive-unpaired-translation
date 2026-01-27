@@ -100,8 +100,12 @@ class BaseModel(ABC):
 
         self.print_networks(opt.verbose)
 
-    def parallelize(self):
-        """Wrap networks with DistributedDataParallel if available, otherwise fallback to DataParallel for single-process multi-gpu."""
+    def parallelize(self, force_rewrap=False):
+        """Wrap networks with DistributedDataParallel if available, otherwise fallback to DataParallel for single-process multi-gpu.
+        
+        Parameters:
+            force_rewrap (bool) -- if True, unwrap and rewrap networks even if already wrapped (useful after data_dependent_initialize)
+        """
         import torch.distributed as dist
         use_ddp = dist.is_available() and dist.is_initialized()
         for name in self.model_names:
@@ -109,9 +113,16 @@ class BaseModel(ABC):
                 net = getattr(self, 'net' + name)
                 if net is None:
                     continue
-                # if already wrapped, skip
-                if isinstance(net, torch.nn.DataParallel) or isinstance(net, torch.nn.parallel.DistributedDataParallel):
+                
+                # 如果已经包装且不强制重新包装，跳过
+                is_wrapped = isinstance(net, torch.nn.DataParallel) or isinstance(net, torch.nn.parallel.DistributedDataParallel)
+                if is_wrapped and not force_rewrap:
                     continue
+                
+                # 如果强制重新包装，先解包
+                if is_wrapped and force_rewrap:
+                    net = net.module
+                
                 if use_ddp:
                     # wrap with DistributedDataParallel on single device
                     device_id = None
@@ -124,7 +135,7 @@ class BaseModel(ABC):
                             device_ids=[device_id], 
                             output_device=device_id, 
                             broadcast_buffers=False,
-                            find_unused_parameters=False  # 避免额外的同步开销
+                            find_unused_parameters=False
                         )
                     else:
                         net.to(self.device)
@@ -211,23 +222,9 @@ class BaseModel(ABC):
                 # handle DataParallel / DistributedDataParallel wrappers
                 net_to_save = net.module if hasattr(net, 'module') else net
 
-                if len(self.gpu_ids) > 0 and torch.cuda.is_available():
-                    # move to CPU for saving
-                    net_cpu = net_to_save.cpu()
-                    torch.save(net_cpu.state_dict(), save_path)
-                    # move back to GPU device
-                    if hasattr(net, 'module'):
-                        try:
-                            net.module.cuda(self.gpu_ids[0])
-                        except Exception:
-                            pass
-                    else:
-                        try:
-                            net.cuda(self.gpu_ids[0])
-                        except Exception:
-                            pass
-                else:
-                    torch.save(net_to_save.cpu().state_dict(), save_path)
+                # 拷贝 state_dict 到 CPU 保存，不移动原网络
+                state_dict_cpu = {k: v.cpu().clone() for k, v in net_to_save.state_dict().items()}
+                torch.save(state_dict_cpu, save_path)
 
     def __patch_instance_norm_state_dict(self, state_dict, module, keys, i=0):
         """Fix InstanceNorm checkpoints incompatibility (prior to 0.4)"""

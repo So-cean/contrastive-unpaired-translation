@@ -47,8 +47,9 @@ class Downsample(nn.Module):
         self.off = int((self.stride - 1) / 2.)
         self.channels = channels
 
+        # 不使用 register_buffer，直接存储为普通属性
         filt = get_filter(filt_size=self.filt_size)
-        self.register_buffer('filt', filt[None, None, :, :].repeat((self.channels, 1, 1, 1)))
+        self.filt_weight = filt[None, None, :, :].repeat((self.channels, 1, 1, 1))
 
         self.pad = get_pad_layer(pad_type)(self.pad_sizes)
 
@@ -59,8 +60,9 @@ class Downsample(nn.Module):
             else:
                 return self.pad(inp)[:, :, ::self.stride, ::self.stride]
         else:
-            # 使用 clone().detach() 创建独立副本，避免梯度版本冲突
-            return F.conv2d(self.pad(inp), self.filt.clone().detach(), stride=self.stride, groups=inp.shape[1])
+            # 每次 forward 时将权重移到正确的设备和数据类型
+            filt = self.filt_weight.to(inp.device, inp.dtype)
+            return F.conv2d(self.pad(inp), filt, stride=self.stride, groups=inp.shape[1])
 
 
 class Upsample2(nn.Module):
@@ -83,14 +85,16 @@ class Upsample(nn.Module):
         self.off = int((self.stride - 1) / 2.)
         self.channels = channels
 
+        # 不使用 register_buffer，直接存储为普通属性
         filt = get_filter(filt_size=self.filt_size) * (stride**2)
-        self.register_buffer('filt', filt[None, None, :, :].repeat((self.channels, 1, 1, 1)))
+        self.filt_weight = filt[None, None, :, :].repeat((self.channels, 1, 1, 1))
 
         self.pad = get_pad_layer(pad_type)([1, 1, 1, 1])
 
     def forward(self, inp):
-        # 使用 clone().detach() 创建独立副本，避免梯度版本冲突
-        ret_val = F.conv_transpose2d(self.pad(inp), self.filt.clone().detach(), stride=self.stride, padding=1 + self.pad_size, groups=inp.shape[1])[:, :, 1:, 1:]
+        # 每次 forward 时将权重移到正确的设备和数据类型
+        filt = self.filt_weight.to(inp.device, inp.dtype)
+        ret_val = F.conv_transpose2d(self.pad(inp), filt, stride=self.stride, padding=1 + self.pad_size, groups=inp.shape[1])[:, :, 1:, 1:]
         if(self.filt_odd):
             return ret_val
         else:

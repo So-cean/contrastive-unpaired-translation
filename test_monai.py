@@ -56,7 +56,7 @@ class MonaiTestProcessor:
             monai_transforms.CenterSpatialCropd(keys=["image"], roi_size=(256, 256, -1)),
             monai_transforms.SpatialPadd(keys=["image"], spatial_size=(256, 256, -1), mode="constant", constant_values=0),
             # Apply intensity normalization AFTER geometric transformations
-            monai_transforms.ScaleIntensityRangePercentilesd(keys=["image"], lower=0, upper=99.5, b_min=0, b_max=1, clip=True),
+            monai_transforms.ScaleIntensityRangePercentilesd(keys=["image"], lower=0.5, upper=99.5, b_min=0, b_max=1, clip=True),
         ])
     
     def process_volume_to_slices(self, nii_path, domain='A'):

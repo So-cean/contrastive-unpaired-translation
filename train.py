@@ -14,6 +14,9 @@ from data import create_dataset
 from models import create_model
 from util.visualizer import Visualizer
 
+import lightning as pl
+pl.seed_everything(42, workers=True)
+
 import importlib
 import shutil
 if shutil.which("npu-smi") and importlib.util.find_spec("torch_npu") is not None:
@@ -26,7 +29,7 @@ if shutil.which("npu-smi") and importlib.util.find_spec("torch_npu") is not None
     
     # ========== 调试和日志 ==========
     # os.environ['ASCEND_GLOBAL_LOG_LEVEL'] = '1'  # DEBUG级别
-    # os.environ['ASCEND_LAUNCH_BLOCKING'] = '1'  # 非阻塞模式
+    os.environ['ASCEND_LAUNCH_BLOCKING'] = '1'  # 非阻塞模式
     # os.environ['NPU_DEBUG'] = '1'
 
 # -------------------- 0. 轮值杂货工具 --------------------
@@ -201,9 +204,7 @@ if __name__ == '__main__':
                 on_duty = roller.on_shift()
                 if rank == on_duty:
                     losses = model.get_current_losses()
-                    print(f'[rank{rank}] on duty → losses @ iter {total_iters}: ', end='', flush=True)
-                    for k, v in losses.items():
-                        print(f'{k} {v:.3f} ', end='', flush=True)
+                    visualizer.print_current_losses(epoch, epoch_iter, losses, optimize_time, t_data)
                     print(flush=True)
 
             # -------------------- 3. 保存轮值 --------------------
@@ -233,5 +234,3 @@ if __name__ == '__main__':
     if distributed:
         dist.destroy_process_group()
         
-        # export HCCL_CONNECT_TIMEOUT= 120     
-# export HCCL_EXEC_TIMEOUT= 120

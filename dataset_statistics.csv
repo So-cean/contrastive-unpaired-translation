@@ -1,0 +1,7 @@
+Part,Volumes,Avg_Z_Spacing(mm),Avg_Slices_Per_Volume,Total_Slices
+trainA,55,1.0000 ± 0.0000,147.7,8122
+valA,9,1.0000 ± 0.0000,146.4,1318
+testA,17,1.0000 ± 0.0000,148.1,2518
+trainB,51,6.0588 ± 0.2353,18.0,918
+valB,7,6.0000 ± 0.0000,18.0,126
+testB,16,6.0000 ± 0.0000,18.0,288

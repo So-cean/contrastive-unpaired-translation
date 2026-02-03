@@ -114,3 +114,9 @@ python results_agg.py \
     --results_root /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/BCP2CBCP/BCP2CBCP_pred/CUT_monai_BCP2CBCP/ \
     --out_root /public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/BCP2CBCP/BCP2CBCP_pred/CUT_monai_BCP2CBCP/agg 
 '''
+
+'''
+python results_agg.py \
+    --results_root /public/home_data/home/songhy2024/data/PVWMI/T1w/k2I-SIEMENS-SKYRA-3.0T/K2I_pred/CUT_monai_K2I/ \
+    --out_root /public/home_data/home/songhy2024/data/PVWMI/T1w/k2I-SIEMENS-SKYRA-3.0T/K2I_pred/CUT_monai_K2I/agg
+'''

@@ -1,20 +1,16 @@
 import os
-import re
 import sys
 import random
 import glob
-from networkx import volume
 import numpy as np
 import nibabel as nib
 import torch
 from collections import OrderedDict
-import pandas as pd
 import torch.distributed as dist
 
 # Add the project root to Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import data
 from data.base_dataset import BaseDataset
 
 
@@ -27,8 +23,6 @@ class MonaiDataset(BaseDataset):
     This dataset class loads 3D MRI NIfTI files and returns 2D slices for CycleGAN training.
     
     It requires two directories to host training volumes:
-    - trainA: thick slice data (厚层数据)
-    - trainB: thin slice data (薄层数据) 
     Each directory should contain .nii.gz files.
     
     For each 3D volume, the dataset randomly selects a 2D slice for training.
@@ -50,8 +44,8 @@ class MonaiDataset(BaseDataset):
         """
         BaseDataset.__init__(self, opt)
             
-        self.dir_A = os.path.join(opt.dataroot, opt.phase + "A")  # thick slice data
-        self.dir_B = os.path.join(opt.dataroot, opt.phase + "B")  # thin slice data
+        self.dir_A = os.path.join(opt.dataroot, opt.phase + "A")  
+        self.dir_B = os.path.join(opt.dataroot, opt.phase + "B")  
 
         # Load NIfTI file paths
         self.A_paths = sorted(glob.glob(os.path.join(self.dir_A, "*.nii.gz")))
@@ -116,7 +110,21 @@ class MonaiDataset(BaseDataset):
         # Calculate total valid slices for each domain
         self._calculate_valid_slices(domain='A')
         self._calculate_valid_slices(domain='B')        
-
+        
+        self.epoch_A_indices = None
+        
+    def set_epoch(self, epoch):
+        """每个 epoch 重新随机配对，确保 A 和 B 都不重复"""
+        self.current_epoch = epoch
+    
+        g = torch.Generator()
+        g.manual_seed(epoch)
+    
+        # A 多：随机选 num_B 个不重复的 A
+        self.epoch_A_indices = torch.randperm(
+            self.num_A_slices, generator=g
+        )[:self.num_B_slices].tolist()
+            
     def _calculate_valid_slices(self, domain:str='A'):
         """Calculate the total number of valid slices for each domain."""
         data_domain = getattr(self, f"data_{domain}")        
@@ -163,18 +171,16 @@ class MonaiDataset(BaseDataset):
             index (int) -- a random integer for data indexing
 
         Returns a dictionary that contains A, B, A_paths and B_paths
-            A (tensor) -- an image slice from domain A (thick slices) (output_channels, 256, 256)
-            B (tensor) -- an image slice from domain B (thin slices) (output_channels, 256, 256)
+            A (tensor) -- an image slice from domain A  (output_channels, 256, 256)
+            B (tensor) -- an image slice from domain B  (output_channels, 256, 256)
             A_paths (str) -- NIfTI file paths
             B_paths (str) -- NIfTI file paths
-        """
-        # Work with slice-level indices so DistributedSampler and other samplers operate correctly
-        index_A = index % self.num_A_slices
-        if self.opt.serial_batches:
-            index_B = index % self.num_B_slices
-        else:
-            index_B = random.randint(0, self.num_B_slices - 1)
-
+        """       
+        # make sure num_A_slices is more than num_B_slices
+        # B 确定（不重复）
+        index_B = index
+        index_A = self.epoch_A_indices[index]
+            
         volume_idx_A, z_A = getattr(self, f"slice_list_A")[index_A]
         volume_idx_B, z_B = getattr(self, f"slice_list_B")[index_B]
 
@@ -198,7 +204,7 @@ class MonaiDataset(BaseDataset):
         return len(self.B_paths)
     
     def __len__(self):
-        return max(self.num_A_slices, self.num_B_slices)
+        return min(self.num_A_slices, self.num_B_slices)
     
 if __name__ == "__main__":
     # Simple test to verify dataset functionality

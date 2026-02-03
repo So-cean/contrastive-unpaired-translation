@@ -126,6 +126,9 @@ class CustomDatasetDataLoader():
     def set_epoch(self, epoch):
         self.dataset.current_epoch = epoch
         if self.sampler is not None:
+            # 2. 调用 dataset 的 set_epoch 方法（新增：让 MonaiDataset 重新生成 A-B 配对）
+            if hasattr(self.dataset, 'set_epoch') and callable(getattr(self.dataset, 'set_epoch')):
+                self.dataset.set_epoch(epoch)
             # DistributedSampler needs to know the epoch for shuffling
             try:
                 self.sampler.set_epoch(epoch)

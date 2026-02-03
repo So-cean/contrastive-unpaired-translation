@@ -28,14 +28,114 @@ torchrun --nproc_per_node=8 train.py \
   --ngf 96 \
   --gan_mode lsgan \
   --num_threads 8 \
-  --n_epochs 50 \
-  --n_epochs_decay 50 \
-  --lr 0.0005 \
+  --n_epochs 100 \
+  --n_epochs_decay 100 \
+  --lr 0.0002 \
   --preprocess scale_width_and_crop \
   --load_size 256 \
   --display_id 0 \
-  --pixel_dim 1.0 1.0 -1 
+  --pixel_dim 1.0 1.0 -1  
 
+torchrun --nproc_per_node=8 train.py \
+  --dataroot /home_data/home/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/ \
+  --name CUT_monai_K2E2_npu_blurupsample \
+  --model cut \
+  --direction AtoB \
+  --no_dropout \
+  --no_flip \
+  --n_layers_D 3 \
+  --save_epoch_freq 10 \
+  --dataset_mode monai \
+  --batch_size 12 \
+  --input_nc 1 \
+  --output_nc 1 \
+  --ngf 96 \
+  --gan_mode lsgan \
+  --num_threads 8 \
+  --n_epochs 100 \
+  --n_epochs_decay 100 \
+  --lr 0.0002 \
+  --preprocess scale_width_and_crop \
+  --load_size 256 \
+  --display_id 0 \
+  --pixel_dim 1.0 1.0 -1  
+
+torchrun --nproc_per_node=8 train.py \
+  --dataroot /home_data/home/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/ \
+  --name CUT_monai_K2E2_npu_min \
+  --model cut \
+  --direction AtoB \
+  --no_dropout \
+  --no_flip \
+  --n_layers_D 3 \
+  --save_epoch_freq 100 \
+  --dataset_mode monai \
+  --batch_size 12 \
+  --input_nc 1 \
+  --output_nc 1 \
+  --ngf 96 \
+  --gan_mode lsgan \
+  --num_threads 8 \
+  --n_epochs 500 \
+  --n_epochs_decay 500 \
+  --lr 0.0002 \
+  --preprocess scale_width_and_crop \
+  --load_size 256 \
+  --display_id 0 \
+  --pixel_dim 1.0 1.0 -1  
+
+torchrun --nproc_per_node=8 train.py \
+  --dataroot /home_data/home/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/ \
+  --name CUT_monai_K2E2_npu_convnext2 \
+  --netG convnext_24blocks \
+  --nce_layers 1,8,14,23,30,35 \
+  --model cut \
+  --direction AtoB \
+  --no_dropout \
+  --no_flip \
+  --n_layers_D 3 \
+  --save_epoch_freq 50 \
+  --dataset_mode monai \
+  --batch_size 6 \
+  --input_nc 1 \
+  --output_nc 1 \
+  --ngf 64 \
+  --gan_mode lsgan \
+  --num_threads 8 \
+  --n_epochs 500 \
+  --n_epochs_decay 500 \
+  --lr 0.0001 \
+  --preprocess scale_width_and_crop \
+  --load_size 256 \
+  --display_id 0 \
+  --pixel_dim 1.0 1.0 -1  
+
+torchrun --nproc_per_node=8 train.py \
+  --dataroot /home_data/home/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/ \
+  --name CUT_monai_K2E2_npu_convnext3 \
+  --netG convnext_24blocks \
+  --nce_layers 1,8,12,18,24,32 \
+  --model cut \
+  --direction AtoB \
+  --no_dropout \
+  --no_flip \
+  --n_layers_D 3 \
+  --save_epoch_freq 50 \
+  --dataset_mode monai \
+  --batch_size 6 \
+  --input_nc 1 \
+  --output_nc 1 \
+  --ngf 64 \
+  --gan_mode lsgan \
+  --num_threads 8 \
+  --n_epochs 100 \
+  --n_epochs_decay 100 \
+  --lr 0.0002 \
+  --lambda_NCE 0.1 \
+  --preprocess scale_width_and_crop \
+  --load_size 256 \
+  --display_id 0 \
+  --pixel_dim 1.0 1.0 -1  
 
 torchrun --nproc_per_node=1 train.py \
   --dataroot /home_data/home/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/ \

@@ -64,30 +64,114 @@ class Downsample(nn.Module):
 
 
 class Upsample2(nn.Module):
-    """使用双线性插值的上采样，避免棋盘格伪影"""
-    def __init__(self, scale_factor, mode='bilinear'):
+    def __init__(self, scale_factor, mode='nearest'):
         super().__init__()
         self.factor = scale_factor
         self.mode = mode
 
     def forward(self, x):
-        return F.interpolate(x, scale_factor=self.factor, mode='bilinear', align_corners=False)
+        return torch.nn.functional.interpolate(x, scale_factor=self.factor, mode=self.mode)
 
-
-class Upsample(nn.Module):
-    """使用双线性插值的上采样，避免棋盘格伪影
     
-    原始实现使用 conv_transpose2d，在 NPU 上容易产生棋盘格伪影。
-    改为使用双线性插值，这是业界公认的最佳实践。
-    参考: https://distill.pub/2016/deconv-checkerboard/
-    """
-    def __init__(self, channels, pad_type='repl', filt_size=4, stride=2):
-        super(Upsample, self).__init__()
-        self.stride = stride
+# class Upsample(nn.Module):
+#     """
+#     StyleGAN2 风格的抗锯齿上采样
+#     只负责上采样和抗锯齿，不降维（降维由后续 nn.Conv2d 完成）
+#     """
+#     def __init__(self, channels, pad_type='reflect', filt_size=3, stride=2):
+#         super().__init__()
+#         self.stride = stride
+        
+#         # 1. 插值上采样（无棋盘格）
+#         self.interp = nn.Upsample(scale_factor=stride, mode='bilinear', 
+#                                   align_corners=False)
+        
+#         # 2. 显式低通滤波（抗锯齿，去除颗粒感）
+#         # depthwise 卷积，不改变通道数
+#         self.blur = nn.Conv2d(channels, channels, kernel_size=filt_size,
+#                               padding=filt_size//2, groups=channels, 
+#                               bias=False)
+        
+#         # 初始化：二项式滤波器
+#         with torch.no_grad():
+#             filt = get_filter(filt_size)  # 无需 * stride，因为只是平滑
+#             self.blur.weight.copy_(
+#                 filt.view(1, 1, filt_size, filt_size).repeat(channels, 1, 1, 1)
+#             )
+        
+#     def forward(self, x):
+#         x = self.interp(x)   # H -> 2H
+#         x = self.blur(x)     # 抗锯齿平滑
+#         return x             # 通道数不变，由后续 nn.Conv2d 降维
 
-    def forward(self, inp):
-        return F.interpolate(inp, scale_factor=self.stride, mode='bilinear', align_corners=False)
+# class Upsample(nn.Module):
+#     """优化版上采样：固定抗锯齿 + 可学习降维"""
+#     def __init__(self, channels, pad_type='repl', filt_size=3, stride=2):
+#         super(Upsample, self).__init__()
+#         self.stride = stride
+        
+#         # 双线性插值
+#         self.interp = nn.Upsample(scale_factor=stride, mode='bilinear', align_corners=False)
+        
+#         # 固定抗锯齿滤波
+#         filt = get_filter(filt_size)
+#         self.register_buffer('blur_kernel', filt[None, None, :, :].repeat(channels, 1, 1, 1))
+#         self.blur_pad = get_pad_layer(pad_type)(filt_size//2)
+        
 
+#     def forward(self, inp):
+#         x = self.interp(inp)
+#         x = F.conv2d(self.blur_pad(x), self.blur_kernel.clone().detach(), stride=1, groups=x.shape[1])
+#         return x
+
+# class Upsample(nn.Module):
+#     def __init__(self, channels, pad_type='repl', filt_size=3, stride=2):
+#         super().__init__()
+#         self.stride = stride
+#         # 2. PixelShuffle 上采样（无棋盘格，无偏移）
+#         self.conv = nn.Conv2d(channels, channels * (stride ** 2), kernel_size=3, padding=1)
+#         self.pixelshuffle = nn.PixelShuffle(stride)
+     
+#     def forward(self, x):
+#         # 在低分辨率空间做特征提取
+#         x = self.conv(x)
+#         # 上采样（PixelShuffle 是 reshape，无偏移）
+#         x = self.pixelshuffle(x)
+#         return x
+
+# # origin cut upsample
+# class Upsample(nn.Module):
+#     def __init__(self, channels, pad_type='repl', filt_size=4, stride=2):
+#         super(Upsample, self).__init__()
+#         self.filt_size = filt_size
+#         self.filt_odd = np.mod(filt_size, 2) == 1
+#         self.pad_size = int((filt_size - 1) / 2)
+#         self.stride = stride
+#         self.off = int((self.stride - 1) / 2.)
+#         self.channels = channels
+
+#         filt = get_filter(filt_size=self.filt_size) * (stride**2)
+#         self.register_buffer('filt', filt[None, None, :, :].repeat((self.channels, 1, 1, 1)))
+
+#         self.pad = get_pad_layer(pad_type)([1, 1, 1, 1])
+
+#     def forward(self, inp):
+#         ret_val = F.conv_transpose2d(self.pad(inp), self.filt.clone().detach(), stride=self.stride, padding=1 + self.pad_size, groups=inp.shape[1])[:, :, 1:, 1:]
+#         if(self.filt_odd):
+#             return ret_val
+#         else:
+#             return ret_val[:, :, :-1, :-1]
+    
+#  modified from original cut upsample, interpolation + conv2d
+class Upsample(nn.Module):
+    def __init__(self, channels, stride=2, mode='bilinear', **kwargs):
+        super().__init__()
+        self.scale_factor = stride
+        self.mode = mode
+        
+    def forward(self, x):
+        return F.interpolate(x, scale_factor=self.scale_factor, 
+                           mode=self.mode, align_corners=False)  
 
 def get_pad_layer(pad_type):
     if(pad_type in ['refl', 'reflect']):
@@ -202,9 +286,10 @@ def init_net(net, init_type='normal', init_gain=0.02, gpu_ids=[], debug=False, i
     Return an initialized network.
     """
     if len(gpu_ids) > 0:
-        # 兼容 NPU 和 GPU：不检查 cuda.is_available()，直接移动到设备
-        # transfer_to_npu 会自动将 .to(cuda_device) 转换为 .to(npu_device)
+        assert(torch.cuda.is_available())
         net.to(gpu_ids[0])
+        # if not amp:
+        # net = torch.nn.DataParallel(net, gpu_ids)  # multi-GPUs for non-AMP training
     if initialize_weights:
         init_weights(net, init_type, init_gain=init_gain, debug=debug)
     return net
@@ -258,6 +343,14 @@ def define_G(input_nc, output_nc, ngf, netG, norm='batch', use_dropout=False, in
     elif netG == 'resnet_cat':
         n_blocks = 8
         net = G_Resnet(input_nc, output_nc, opt.nz, num_downs=2, n_res=n_blocks - 4, ngf=ngf, norm='inst', nl_layer='relu')
+    elif netG == 'convnext_9blocks':
+        net = ConvNeXtGenerator(input_nc, output_nc, ngf, norm_layer=norm_layer, use_dropout=use_dropout, 
+                              no_antialias=no_antialias, no_antialias_up=no_antialias_up, n_blocks=9, opt=opt,
+                              convnext_kernel_size=7, drop_path_rate=0.1)
+    elif netG == 'convnext_24blocks':
+        net = ConvNeXtGenerator(input_nc, output_nc, ngf, norm_layer=norm_layer, use_dropout=use_dropout, 
+                              no_antialias=no_antialias, no_antialias_up=no_antialias_up, n_blocks=24, opt=opt,
+                              convnext_kernel_size=7, drop_path_rate=0.2)
     else:
         raise NotImplementedError('Generator model name [%s] is not recognized' % netG)
     return init_net(net, init_type, init_gain, gpu_ids, initialize_weights=('stylegan2' not in netG))
@@ -539,13 +632,92 @@ class PatchSampleF(nn.Module):
         for mlp_id, feat in enumerate(feats):
             input_nc = feat.shape[1]
             mlp = nn.Sequential(*[nn.Linear(input_nc, self.nc), nn.ReLU(), nn.Linear(self.nc, self.nc)])
-            # 使用 feat.device 确保在正确的设备上（NPU 或 GPU）
-            mlp = mlp.to(feat.device)
+            if len(self.gpu_ids) > 0:
+                mlp.cuda()
             setattr(self, 'mlp_%d' % mlp_id, mlp)
-        # 只初始化权重，不移动设备（已经在正确设备上了）
-        init_weights(self, self.init_type, self.init_gain)
+        init_net(self, self.init_type, self.init_gain, self.gpu_ids)
         self.mlp_init = True
 
+    # @torch.no_grad()
+    # def _sample_foreground(self, feat, num_patches, real_A):
+    #     B, C, H, W = feat.shape
+    #     device = feat.device
+    #     total_pixels = H * W
+
+    #     mask = F.interpolate(real_A, size=(H, W), mode='nearest').clamp(-1, 1)  # (B,1,H,W)
+        
+    #     # 更安全的mask计算
+    #     cond = (mask.squeeze(1) > -1).float()   # 0/1 权重
+    #     mask_bin = torch.lerp(torch.tensor(0.0, device=device),
+    #                         torch.tensor(1.0, device=device),
+    #                         cond)
+        
+        
+    #     mask_flat = mask_bin.view(B, -1)
+        
+    #     patch_ids_list = []
+    #     for b in range(B):
+    #         mb = mask_flat[b]
+            
+    #         # 方法1：简化权重计算，避免大规模布尔索引
+    #         # 直接计算权重，不用布尔索引
+    #         weights = torch.lerp(torch.full_like(mb, 0.1),
+    #                          torch.full_like(mb, 1.0),
+    #                          mb)
+            
+    #         # 归一化
+    #         weight_sum = weights.sum()
+    #         if weight_sum <= 0:
+    #             # 如果全为背景，使用均匀分布
+    #             weights = torch.ones_like(weights) / total_pixels
+    #         else:
+    #             weights = weights / weight_sum
+            
+    #         # 采样
+    #         idx = torch.multinomial(weights, 
+    #                             min(num_patches, total_pixels), 
+    #                             replacement=False)
+    #         patch_ids_list.append(idx)
+        
+    #     return torch.cat(patch_ids_list)      
+            
+    # def forward(self, feats, num_patches=64, patch_ids=None, real_A=None):
+    #     """
+    #     feats   : list of Tensor  多层特征
+    #     real_A  : Tensor (B,1,H0,W0)  原始输入，用于生成前景mask
+    #     """
+    #     return_ids  = []
+    #     return_feats= []
+    #     if self.use_mlp and not self.mlp_init:
+    #         self.create_mlp(feats)
+
+    #     for feat_id, feat in enumerate(feats):
+    #         B, C, H, W = feat.shape
+    #         feat_reshape = feat.permute(0, 2, 3, 1).flatten(1, 2)   # (B, H*W, C)
+
+    #         if num_patches > 0:
+    #             if patch_ids is not None:
+    #                 patch_id = patch_ids[feat_id]
+    #             else:
+    #                 # 关键：只在前景采样
+    #                 patch_id = self._sample_foreground(feat, num_patches, real_A)
+    #             x_sample = feat_reshape[:, patch_id, :].flatten(0, 1)      # (N, C)
+    #         else:
+    #             x_sample = feat_reshape
+    #             patch_id = []
+
+    #         if self.use_mlp:
+    #             mlp = getattr(self, 'mlp_%d' % feat_id)
+    #             x_sample = mlp(x_sample)
+    #         return_ids.append(patch_id)
+    #         x_sample = self.l2norm(x_sample)
+            
+    #         if num_patches == 0:
+    #             x_sample = x_sample.permute(0, 2, 1).reshape([B, x_sample.shape[-1], H, W])
+    #         return_feats.append(x_sample)
+
+    #     return return_feats, return_ids
+    
     def forward(self, feats, num_patches=64, patch_ids=None, real_A=None):
         return_ids = []
         return_feats = []
@@ -1245,30 +1417,26 @@ class UnetSkipConnectionBlock(nn.Module):
         uprelu = nn.ReLU(inplace=False)
         upnorm = norm_layer(outer_nc)
 
-        # 使用双线性插值 + Conv 代替 ConvTranspose2d，避免棋盘格伪影
         if outermost:
-            # 上采样：bilinear + conv
-            up = [uprelu,
-                  nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
-                  nn.Conv2d(inner_nc * 2, outer_nc, kernel_size=3, stride=1, padding=1),
-                  nn.Tanh()]
+            upconv = nn.ConvTranspose2d(inner_nc * 2, outer_nc,
+                                        kernel_size=4, stride=2,
+                                        padding=1)
             down = [downconv]
+            up = [uprelu, upconv, nn.Tanh()]
             model = down + [submodule] + up
         elif innermost:
-            # 上采样：bilinear + conv
-            up = [uprelu,
-                  nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
-                  nn.Conv2d(inner_nc, outer_nc, kernel_size=3, stride=1, padding=1, bias=use_bias),
-                  upnorm]
+            upconv = nn.ConvTranspose2d(inner_nc, outer_nc,
+                                        kernel_size=4, stride=2,
+                                        padding=1, bias=use_bias)
             down = [downrelu, downconv]
+            up = [uprelu, upconv, upnorm]
             model = down + up
         else:
-            # 上采样：bilinear + conv
-            up = [uprelu,
-                  nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
-                  nn.Conv2d(inner_nc * 2, outer_nc, kernel_size=3, stride=1, padding=1, bias=use_bias),
-                  upnorm]
+            upconv = nn.ConvTranspose2d(inner_nc * 2, outer_nc,
+                                        kernel_size=4, stride=2,
+                                        padding=1, bias=use_bias)
             down = [downrelu, downconv, downnorm]
+            up = [uprelu, upconv, upnorm]
 
             if use_dropout:
                 model = down + [submodule] + up + [nn.Dropout(0.5)]
@@ -1403,3 +1571,487 @@ class GroupedChannelNorm(nn.Module):
         std = x.std(dim=2, keepdim=True)
         x_norm = (x - mean) / (std + 1e-7)
         return x_norm.view(*shape)
+    
+
+# class Converse2D(nn.Module):
+#     def __init__(self, in_channels, out_channels, kernel_size, scale=1, padding=2, padding_mode='circular', eps=1e-5):
+#         super(Converse2D, self).__init__()
+#         """
+#         Converse2D Operator for Image Restoration Tasks.
+
+#         Args:
+#             x (Tensor): Input tensor of shape (N, in_channels, H, W), where
+#                         N is the batch size, H and W are spatial dimensions.
+#             in_channels (int): Number of channels in the input tensor.
+#             out_channels (int): Number of channels produced by the operation.
+#             kernel_size (int): Size of the kernel.
+#             scale (int): Upsampling factor. For example, `scale=2` doubles the resolution.
+#             padding (int): Padding size. Recommended value is `kernel_size - 1`.
+#             padding_mode (str, optional): Padding method. One of {'reflect', 'replicate', 'circular', 'constant'}.
+#                                         Default is `circular`.
+#             eps (float, optional): Small value added to denominators for numerical stability.
+#                                 Default is a small value like 1e-5.
+
+#         Returns:
+#             Tensor: Output tensor of shape (N, out_channels, H * scale, W * scale), where spatial dimensions
+#                     are upsampled by the given scale factor.
+#         """
+        
+#         self.in_channels = in_channels
+#         self.out_channels = out_channels
+#         self.kernel_size =  kernel_size
+#         self.scale = scale
+#         self.padding = padding
+#         self.padding_mode = padding_mode
+#         self.eps = eps
+
+
+#         # ensure depthwise
+#         assert self.out_channels == self.in_channels
+#         self.weight = nn.Parameter(torch.randn(1, self.in_channels, self.kernel_size, self.kernel_size))
+#         self.bias = nn.Parameter(torch.zeros(1, self.in_channels, 1, 1))
+#         self.weight.data = nn.functional.softmax(self.weight.data.view(1,self.in_channels,-1), dim=-1).view(1, self.in_channels, self.kernel_size, self.kernel_size)
+
+        
+#     def forward(self, x):
+#         if self.padding > 0:
+#             x = nn.functional.pad(x, pad=[self.padding]*4, mode=self.padding_mode, value=0)
+
+#         self.biaseps = torch.sigmoid(self.bias-9.0) + self.eps
+#         _, _, h, w = x.shape
+#         STy = self.upsample(x, scale=self.scale)
+        
+#         if self.scale != 1:
+#             x = nn.functional.interpolate(x, scale_factor=self.scale, mode='nearest')
+
+#         FB = self.p2o(self.weight, (h*self.scale, w*self.scale))
+#         FBC = torch.conj(FB)
+        
+#         # ========== 关键修复：手动计算 |FB|^2，避免使用 torch.abs(complex) ==========
+#         # 原代码（NPU不支持）: F2B = torch.pow(torch.abs(FB), 2)
+#         # 新代码：利用 |z|^2 = z * conj(z)
+#         F2B = (FB * FBC).real  # 复数乘法后取实部，即为模的平方
+        
+#         FBFy = FBC * torch.fft.fftn(STy, dim=(-2, -1))
+#         FR = FBFy + torch.fft.fftn(self.biaseps * x, dim=(-2,-1))
+        
+#         x1 = FB.mul(FR)
+#         FBR = torch.mean(self.splits(x1, self.scale), dim=-1, keepdim=False)
+#         invW = torch.mean(self.splits(F2B, self.scale), dim=-1, keepdim=False)
+        
+#         invWBR = FBR.div(invW + self.biaseps)
+#         FCBinvWBR = FBC * invWBR.repeat(1, 1, self.scale, self.scale)
+#         FX = (FR - FCBinvWBR) / self.biaseps
+#         out = torch.real(torch.fft.ifftn(FX, dim=(-2, -1)))
+
+#         if self.padding > 0:
+#             out = out[..., self.padding*self.scale:-self.padding*self.scale, 
+#                              self.padding*self.scale:-self.padding*self.scale]
+#         return out
+
+#     def splits(self, a, scale):
+#         '''
+#         Split tensor `a` into `scale x scale` distinct blocks.
+#         Args:
+#             a: Tensor of shape (..., W, H)
+#             scale: Split factor
+#         Returns:
+#             b: Tensor of shape (..., W/scale, H/scale, scale^2)
+#         '''
+#         *leading_dims, W, H = a.size()
+#         W_s, H_s = W // scale, H // scale
+
+#         # Reshape to separate the scale factors
+#         b = a.view(*leading_dims, scale, W_s, scale, H_s)
+
+#         # Generate the permutation order
+#         permute_order = list(range(len(leading_dims))) + [len(leading_dims) + 1, len(leading_dims) + 3, len(leading_dims), len(leading_dims) + 2]
+#         b = b.permute(*permute_order).contiguous()
+
+#         # Combine the scale dimensions
+#         b = b.view(*leading_dims, W_s, H_s, scale * scale)
+#         return b
+
+
+#     def p2o(self, psf, shape):
+#         '''
+#         Convert point-spread function to optical transfer function.
+#         otf = p2o(psf) computes the Fast Fourier Transform (FFT) of the
+#         point-spread function (PSF) array and creates the optical transfer
+#         function (OTF) array that is not influenced by the PSF off-centering.
+#         Args:
+#             psf: NxCxhxw
+#             shape: [H, W]
+#         Returns:
+#             otf: NxCxHxWx2
+#         '''
+#         otf = torch.zeros(psf.shape[:-2] + shape).type_as(psf)
+#         otf[...,:psf.shape[-2],:psf.shape[-1]].copy_(psf)
+#         otf = torch.roll(otf, (-int(psf.shape[-2]/2), -int(psf.shape[-1]/2)), dims=(-2, -1))
+#         otf = torch.fft.fftn(otf, dim=(-2,-1))
+
+#         return otf
+
+#     def upsample(self, x, scale=3):
+#         '''s-fold upsampler
+#         Upsampling the spatial size by filling the new entries with zeros
+#         x: tensor image, NxCxWxH
+#         '''
+#         st = 0
+#         z = torch.zeros((x.shape[0], x.shape[1], x.shape[2]*scale, x.shape[3]*scale)).type_as(x)
+#         z[..., st::scale, st::scale].copy_(x)
+#         return z
+
+class Converse2D(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size, scale=1, 
+                 padding=2, padding_mode='circular', eps=1e-5):
+        super().__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.kernel_size = kernel_size
+        self.scale = scale
+        self.padding = padding
+        self.padding_mode = padding_mode
+        self.eps = eps
+
+        assert self.out_channels == self.in_channels
+        self.weight = nn.Parameter(torch.randn(1, self.in_channels, self.kernel_size, self.kernel_size))
+        self.bias = nn.Parameter(torch.zeros(1, self.in_channels, 1, 1))
+        with torch.no_grad():
+            self.weight.data = F.softmax(
+                self.weight.data.view(1, in_channels, -1), dim=-1
+            ).view(1, in_channels, kernel_size, kernel_size)
+            
+    def forward(self, x):
+        # 强制记录输入设备
+        device = x.device
+
+        # 1. Padding（保持内存连续）
+        if self.padding > 0:
+            x = F.pad(x, pad=[self.padding]*4, mode=self.padding_mode, value=0)
+            x = x.contiguous()  # 确保 padding 后连续
+        
+        # 2. 计算 bias（局部变量，避免 self.bias_eps = ...）
+        # sigmoid(-9.0) ≈ 0.0001，保证数值稳定
+        bias_eps = torch.sigmoid(self.bias - 9.0) + self.eps
+        
+        b, c, h, w = x.shape
+        
+        # 3. 零插值上采样
+        x_up = self._upsample_zero(x, self.scale)
+        x_up = x_up.contiguous()
+        
+        # 如果 scale=1，x_interp 就是 x_up，避免重复插值
+        if self.scale != 1:
+            x_interp = F.interpolate(x, scale_factor=self.scale, mode='nearest').contiguous()
+        else:
+            x_interp = x_up
+        
+        # 4. 生成 OTF（光学传递函数）- 关键优化点
+        # 确保 weight 在对应设备且连续
+        weight = self.weight.to(device).contiguous()
+        FB = self.p2o(weight, (h * self.scale, w * self.scale))
+        FB = FB.contiguous()
+        
+        FBC = torch.conj(FB).contiguous()
+        
+        # 手动模平方（避免 abs，且确保实数输出）
+        # (a+bi)(a-bi) = a^2 + b^2
+        F2B = (FB.real**2 + FB.imag**2).contiguous()  # 实数张量
+        
+        # 5. FFT 前准备 - 确保输入严格连续且对齐
+        STy = x_up.contiguous()
+        input_signal = (bias_eps * x_interp).contiguous()
+        
+        # 执行 FFT（NPU 优化维度：batch 符合文档要求，数据连续）
+        fft_STy = torch.fft.fftn(STy, dim=(-2, -1))
+        fft_input = torch.fft.fftn(input_signal, dim=(-2, -1))
+        
+        FBFy = FBC * fft_STy
+        FR = FBFy + fft_input
+        
+        # 6. Splits 操作 - NPU 性能瓶颈点，必须保证连续
+        # splits: 将 (H, W) 分割为 (H/scale, W/scale, scale^2)
+        x1 = FB * FR
+        x1 = x1.contiguous()
+        
+        # 优化后的 splits：先 reshape 再 permute，最后 reshape
+        FBR = self._splits_mean(x1, self.scale)  # 自定义连续内存版本
+        
+        F2B_contig = F2B.contiguous()
+        invW = self._splits_mean(F2B_contig, self.scale)
+        
+        # 7. 后续计算
+        invWBR = FBR / (invW + bias_eps)
+        
+        # repeat 和广播可能产生非连续内存，用 expand 或 contiguous 修正
+        FCBinvWBR = FBC * invWBR.unsqueeze(-1).unsqueeze(-1).expand_as(FBC)
+        FCBinvWBR = FCBinvWBR.contiguous()
+        
+        FX = (FR - FCBinvWBR) / bias_eps
+        
+        # 8. IFFT 和取实部
+        out = torch.fft.ifftn(FX, dim=(-2, -1))
+        out = out.real.contiguous()  # 强制连续
+        
+        # 9. 去除 padding
+        if self.padding > 0:
+            pad_remove = self.padding * self.scale
+            out = out[..., pad_remove:-pad_remove, pad_remove:-pad_remove].contiguous()
+        
+        return out
+
+    def p2o(self, psf, shape, target_device):
+        """显式指定设备，防止创建 CPU 零张量"""
+        # 关键修复：确保 zeros 在目标设备上创建
+        otf = torch.zeros(psf.shape[:-2] + shape, device=target_device, dtype=psf.dtype)
+        otf[..., :psf.shape[-2], :psf.shape[-1]].copy_(psf)
+        otf = torch.roll(otf, (-int(psf.shape[-2]/2), -int(psf.shape[-1]/2)), dims=(-2, -1))
+        
+        # 执行 FFT
+        otf = torch.fft.fftn(otf, dim=(-2,-1))
+        return otf
+
+    def splits(self, a, scale):
+        *leading_dims, W, H = a.size()
+        W_s, H_s = W // scale, H // scale
+        b = a.view(*leading_dims, scale, W_s, scale, H_s)
+        permute_order = list(range(len(leading_dims))) + [len(leading_dims) + 1, 
+                                                          len(leading_dims) + 3, 
+                                                          len(leading_dims), 
+                                                          len(leading_dims) + 2]
+        b = b.permute(*permute_order).contiguous()
+        b = b.view(*leading_dims, W_s, H_s, scale * scale)
+        return b
+
+    def upsample(self, x, scale):
+        # 显式在与 x 相同设备创建零张量
+        z = torch.zeros((x.shape[0], x.shape[1], x.shape[2]*scale, x.shape[3]*scale), 
+                       device=x.device, dtype=x.dtype)
+        z[..., ::scale, ::scale] = x
+        return z
+    
+"""
+# --------------------------------------------
+# implementation of Converse Block
+# --------------------------------------------
+"""
+class ConverseBlock(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size=3, scale=1, padding=2, padding_mode='replicate', eps=1e-6):
+        super(ConverseBlock, self).__init__()
+        """
+        ConverseBlock: A Convolutional Block for Image Restoration using Converse2D Operations.
+
+        This block consists of two main sub-blocks, each incorporating normalization, pointwise convolution,
+        non-linearity, and (optionally) a custom reverse convolution (`Converse2D`) for learnable upsampling.
+        It also includes residual connections to preserve information and improve gradient flow.
+
+        Args:
+            in_channels (int): Number of channels in the input tensor.
+            out_channels (int): Number of channels to be produced by the block.
+            kernel_size (int, optional): Kernel size used in the `Converse2D` operation. Default: 3.
+            scale (int, optional): Upsampling scale factor. Default: 1 (no upsampling).
+            padding (int, optional): Padding size for `Converse2D`. Default: 2.
+            padding_mode (str, optional): Padding mode to use in `Converse2D`. One of {'reflect', 'replicate', 'circular', 'constant'}. Default: 'circular'.
+            eps (float, optional): A small epsilon value for numerical stability in normalization layers. Default: 1e-6.
+
+        Forward:
+            x (Tensor): Input tensor of shape (N, in_channels, H, W)
+            Returns:
+                Tensor: Output tensor of shape (N, out_channels, H * scale, W * scale)
+        """
+        self.conv1 = nn.Sequential(
+            nn.GroupNorm(1, in_channels, eps=eps), 
+            nn.Conv2d(in_channels, 2*out_channels, 1, 1, 0),
+            nn.GELU(),
+            Converse2D(2*out_channels, 2*out_channels, kernel_size, 
+                      scale=scale, padding=padding, padding_mode=padding_mode, eps=eps), 
+            nn.GELU(),
+            nn.Conv2d(2*out_channels, out_channels, 1, 1, 0)
+        )
+                                  
+        self.conv2 = nn.Sequential(
+            nn.GroupNorm(1, out_channels, eps=eps),  
+            nn.Conv2d(out_channels, 2*out_channels, 1, 1, 0),
+            nn.GELU(),
+            nn.Conv2d(2*out_channels, out_channels, 1, 1, 0)
+        )
+                                  
+    def forward(self, x):
+        x = self.conv1(x) + x
+        x = self.conv2(x) + x
+        return x
+class UpsampleConverse(nn.Module):
+    def __init__(self, channels, scale_factor=2, kernel_size=5, padding_mode='circular'):
+        """
+        使用 Converse2D 替代 F.interpolate，但需指定 channels
+        Args:
+            scale_factor: 上采样倍率
+            channels: 输入通道数（必须指定，因为 Converse2D 是 depth-wise）
+        """
+        super().__init__()
+        self.scale_factor = scale_factor
+        
+        self.converse = Converse2D(
+            in_channels=channels,
+            out_channels=channels,
+            kernel_size=kernel_size,
+            scale=scale_factor,
+            padding=kernel_size-1,
+            padding_mode=padding_mode
+        )
+    
+    def forward(self, x):
+        return self.converse(x)
+    
+
+# ============================================
+# 主生成器类
+# ============================================
+
+class ConvNeXtBlock(nn.Module):
+    """
+    ConvNeXt Block: 内部使用 nn.LayerNorm
+    """
+    def __init__(self, dim, drop_path=0., layer_scale_init_value=1e-6, kernel_size=7):
+        super().__init__()
+        self.dwconv = nn.Conv2d(dim, dim, kernel_size=kernel_size, 
+                               padding=kernel_size//2, groups=dim)
+        self.norm = nn.LayerNorm(dim, eps=1e-6)
+        self.pwconv1 = nn.Linear(dim, 4 * dim)
+        self.act = nn.GELU()
+        self.pwconv2 = nn.Linear(4 * dim, dim)
+        self.gamma = nn.Parameter(layer_scale_init_value * torch.ones(dim), 
+                                  requires_grad=True) if layer_scale_init_value > 0 else None
+        self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
+
+    def forward(self, x):
+        input = x
+        x = self.dwconv(x)
+        x = x.permute(0, 2, 3, 1).contiguous()
+        x = self.norm(x)
+        x = self.pwconv1(x)
+        x = self.act(x)
+        x = self.pwconv2(x)
+        if self.gamma is not None:
+            x = self.gamma * x
+        x = x.permute(0, 3, 1, 2).contiguous()
+        x = input + self.drop_path(x)
+        return x
+
+class DropPath(nn.Module):
+    def __init__(self, drop_prob=0.):
+        super().__init__()
+        self.drop_prob = drop_prob
+
+    def forward(self, x):
+        if self.drop_prob == 0. or not self.training:
+            return x
+        keep_prob = 1 - self.drop_prob
+        shape = (x.shape[0],) + (1,) * (x.ndim - 1)
+        random_tensor = keep_prob + torch.rand(shape, dtype=x.dtype, device=x.device)
+        random_tensor.floor_()
+        return x.div(keep_prob) * random_tensor
+
+class ConvNeXtGenerator(nn.Module):
+    """
+    ConvNeXt Generator - 标准 Sequential 风格，类似 ResnetGenerator
+    先用标准 Upsample 调试，确认无误后再换 Converse2D
+    """
+    def __init__(self, input_nc, output_nc, ngf=64, norm_layer=None, 
+                 use_dropout=False, n_blocks=6, padding_type='reflect', 
+                 no_antialias=False, no_antialias_up=False, opt=None,
+                 convnext_kernel_size=7,      
+                 drop_path_rate=0.1):
+        
+        super(ConvNeXtGenerator, self).__init__()
+        self.opt = opt
+        self.n_blocks = n_blocks
+        
+        # 构建模型列表（ResnetGenerator 风格）
+        model = []
+        
+        # --- 入口 ---
+        model += [nn.ReflectionPad2d(3),
+                  nn.Conv2d(input_nc, ngf, kernel_size=7, padding=0),
+                  nn.GroupNorm(1, ngf, eps=1e-6),
+                  nn.GELU()]
+
+        n_downsampling = 2
+        
+        # --- 下采样 ---
+        for i in range(n_downsampling):
+            mult = 2 ** i
+            in_ch = ngf * mult
+            out_ch = ngf * mult * 2
+            
+            if no_antialias:
+                model += [nn.Conv2d(in_ch, out_ch, 3, stride=2, padding=1),
+                          nn.GroupNorm(1, out_ch, eps=1e-6),
+                          nn.GELU()]
+            else:
+                model += [nn.Conv2d(in_ch, out_ch, 3, stride=1, padding=1),
+                          nn.GroupNorm(1, out_ch, eps=1e-6),
+                          nn.GELU(),
+                          Downsample(out_ch)]  # 你原来的 Downsample
+
+        # --- ConvNeXt Blocks (核心) ---
+        mult = 2 ** n_downsampling
+        dpr = [x.item() for x in torch.linspace(0, drop_path_rate, n_blocks)]
+        
+        for i in range(n_blocks):
+            model += [ConvNeXtBlock(ngf * mult, 
+                                   drop_path=dpr[i],
+                                   kernel_size=convnext_kernel_size)]
+
+        # --- 上采样 (标准版，用于 debug) ---
+        for i in range(n_downsampling):
+            mult = 2 ** (n_downsampling - i)
+            in_ch = ngf * mult
+            out_ch = int(ngf * mult / 2)
+            
+            if no_antialias_up:
+                # 标准 ConvTranspose
+                model += [nn.ConvTranspose2d(in_ch, out_ch, 3, stride=2, 
+                                            padding=1, output_padding=1),
+                          nn.GroupNorm(1, out_ch, eps=1e-6),
+                          nn.GELU()]
+            else:
+                # 标准抗锯齿上采样（使用你原来的 Upsample 类）
+                model += [Upsample(in_ch),  # 你原来的 Upsample（非 Converse）
+                          nn.Conv2d(in_ch, out_ch, 3, padding=1),
+                          nn.GroupNorm(1, out_ch, eps=1e-6),
+                          nn.GELU()]
+
+        # --- 出口 ---
+        model += [nn.ReflectionPad2d(3),
+                  nn.Conv2d(ngf, output_nc, kernel_size=7, padding=0),
+                  nn.Tanh()]
+
+        self.model = nn.Sequential(*model)
+        
+        # 打印调试信息
+        n_params = sum(p.numel() for p in self.parameters()) / 1e6
+        print(f"[ConvNeXtGenerator] n_blocks={n_blocks}, "
+              f"kernel={convnext_kernel_size}, params={n_params:.2f}M")
+
+    def forward(self, input, layers=[], encode_only=False):
+        """
+        完全兼容 CUT 的多层特征提取接口
+        """
+        
+        if -1 in layers:
+            layers.append(len(self.model))
+        
+        if len(layers) > 0:
+            feat = input
+            feats = []
+            for layer_id, layer in enumerate(self.model):
+                feat = layer(feat)
+                if layer_id in layers:
+                    feats.append(feat)
+                if layer_id == layers[-1] and encode_only:
+                    return feats
+            return feat, feats
+        else:
+            return self.model(input)

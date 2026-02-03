@@ -33,8 +33,10 @@ if __name__ == "__main__":
     opt = TestOptions().parse()
     # 支持 --phase all，或指定 train/val/test
     phases = []
-    if hasattr(opt, 'phase') and opt.phase in ['train', 'val', 'test']:
+    if hasattr(opt, 'phase'):
         phases = [opt.phase]
+        if opt.phase == 'all':
+            phases = ['train', 'val', 'test']
     else:
         phases = ['train', 'val', 'test']
 

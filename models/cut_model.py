@@ -119,6 +119,9 @@ class CUTModel(BaseModel):
         sx_x, sx_y = sobel(src)
         sy_x, sy_y = sobel(tgt)
         return F.l1_loss(sx_x, sy_x) + F.l1_loss(sx_y, sy_y)
+    
+    # def calculate_canny_loss(self, src, tgt):
+        
 
     def data_dependent_initialize(self, data):
         """

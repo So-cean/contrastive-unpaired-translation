@@ -3,9 +3,11 @@ import torch
 from .base_model import BaseModel
 from . import networks
 from .patchnce import PatchNCELoss
+# from .ranknce import  RankNCELoss as PatchNCELoss
 import util.util as util
 from pytorch_msssim import ssim, SSIM
 import torch.nn.functional as F
+import kornia
 
 class CUTModel(BaseModel):
     """ This class implements CUT and FastCUT model, described in the paper
@@ -36,10 +38,10 @@ class CUTModel(BaseModel):
         parser.add_argument('--flip_equivariance',
                             type=util.str2bool, nargs='?', const=True, default=False,
                             help="Enforce flip-equivariance as additional regularization. It's used by FastCUT, but not CUT")
-        parser.add_argument('--lambda_SSIM', type=float, default=0.1, help='weight for SSIM loss')
-        parser.add_argument('--lambda_grad', type=float, default=0.5, help='weight for Sobel-gradient consistency')
         
-        
+        parser.add_argument('--lambda_SSIM', type=float, default=10, help='weight for SSIM loss')
+        parser.add_argument('--lambda_canny', type=float, default=10, help='weight for Canny edge consistency loss')
+       
         parser.set_defaults(pool_size=0)  # no image pooling
 
         opt, _ = parser.parse_known_args()
@@ -62,7 +64,7 @@ class CUTModel(BaseModel):
 
         # specify the training losses you want to print out.
         # The training/test scripts will call <BaseModel.get_current_losses>
-        self.loss_names = ['G_GAN', 'D_real', 'D_fake', 'G', 'NCE', 'Idt', 'SSIM', 'Grad']
+        self.loss_names = ['G_GAN', 'D_real', 'D_fake', 'G', 'NCE', 'Idt', 'SSIM', 'Canny']
         self.visual_names = ['real_A', 'fake_B', 'real_B']
         self.nce_layers = [int(i) for i in self.opt.nce_layers.split(',')]
 
@@ -95,7 +97,7 @@ class CUTModel(BaseModel):
             self.optimizers.append(self.optimizer_G)
             self.optimizers.append(self.optimizer_D)
             
-        self.ssim_loss = SSIM(data_range=2.0, size_average=True, channel=opt.output_nc)
+        # self.ssim_loss = SSIM(data_range=2.0, size_average=True, channel=opt.output_nc)
 
     # ----------- SSIM -----------
     def compute_ssim_loss(self, src, tgt):
@@ -120,8 +122,67 @@ class CUTModel(BaseModel):
         sy_x, sy_y = sobel(tgt)
         return F.l1_loss(sx_x, sy_x) + F.l1_loss(sx_y, sy_y)
     
-    # def calculate_canny_loss(self, src, tgt):
+    def compute_canny_loss(self, src, tgt, 
+                           low_threshold=0.1, 
+                           high_threshold=0.2, 
+                           kernel_size=5, 
+                           sigma=1.0, 
+                           hysteresis=True, 
+                           loss_type='l1', 
+                           use_edge_map=False):
+        """
+        Args:
+            low_threshold (float): Canny 低阈值。
+            high_threshold (float): Canny 高阈值。
+            kernel_size (tuple): 高斯核大小。
+            sigma (tuple): 高斯核标准差。
+            hysteresis (bool): 是否使用滞后阈值。
+            loss_type (str): 损失类型，'l1' 或 'l2'。
+            use_edge_map (bool): 如果为 True，则使用二值化边缘图计算损失；
+                                 如果为 False，则使用梯度幅值图计算损失。
+        """
+        # 1. 转换到 [0, 1] 范围（kornia 期望的输入）
+        src_01 = (src + 1) / 2
+        tgt_01 = (tgt + 1) / 2
         
+        # 2. 如果是多通道，转换为灰度
+        if src_01.shape[1] == 3:
+            src_gray = kornia.color.rgb_to_grayscale(src_01)
+            tgt_gray = kornia.color.rgb_to_grayscale(tgt_01)
+        else:
+            src_gray = src_01
+            tgt_gray = tgt_01
+            
+        magnitude_src, edges_src = kornia.filters.canny(
+            src_gray,
+            low_threshold=low_threshold,
+            high_threshold=high_threshold,
+            kernel_size=(kernel_size,kernel_size),
+            sigma=(sigma, sigma),
+            hysteresis=hysteresis
+        )
+        
+        magnitude_tgt, edges_tgt = kornia.filters.canny(
+            tgt_gray,
+            low_threshold=low_threshold,
+            high_threshold=high_threshold,
+            kernel_size=(kernel_size,kernel_size),
+            sigma=(sigma, sigma),
+            hysteresis=hysteresis
+        )
+        
+        # 4. 计算损失
+        if use_edge_map:
+            pred = edges_src
+            target = edges_tgt
+        else:
+            pred = magnitude_src
+            target = magnitude_tgt
+        
+        criterion = F.l1_loss if loss_type == 'l1' else F.mse_loss
+        loss = criterion(pred, target)        
+        
+        return loss
 
     def data_dependent_initialize(self, data):
         """
@@ -243,16 +304,16 @@ class CUTModel(BaseModel):
             loss_NCE_both = self.loss_NCE
         
         self.loss_SSIM = 0.0
-        self.loss_Grad = 0.0
+        self.loss_Canny = 0.0
         if self.opt.lambda_SSIM > 0:
             self.loss_SSIM = self.compute_ssim_loss(self.real_A, self.fake_B) * self.opt.lambda_SSIM
 
-        if self.opt.lambda_grad > 0:
-            self.loss_Grad = self.sobel_grad_loss(self.real_A, self.fake_B) * self.opt.lambda_grad
+        if self.opt.lambda_canny > 0:
+            self.loss_Canny = self.compute_canny_loss(self.real_A, self.fake_B) * self.opt.lambda_canny
                     
         self.loss_Idt = self.criterionIdt(self.real_B, self.idt_B)
 
-        self.loss_G = self.loss_G_GAN + loss_NCE_both + self.loss_SSIM + self.loss_Grad
+        self.loss_G = self.loss_G_GAN + loss_NCE_both + self.loss_SSIM + self.loss_Canny
         return self.loss_G
 
     def calculate_NCE_loss(self, src, tgt):

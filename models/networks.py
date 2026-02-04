@@ -7,6 +7,8 @@ from torch.optim import lr_scheduler
 import numpy as np
 from .stylegan_networks import StyleGAN2Discriminator, StyleGAN2Generator, TileStyleGAN2Discriminator
 
+from .convnext_networks import ConvNeXtGenerator
+from .convnextv2_networks import ConvNeXtV2Generator
 ###############################################################################
 # Helper Functions
 ###############################################################################
@@ -349,6 +351,14 @@ def define_G(input_nc, output_nc, ngf, netG, norm='batch', use_dropout=False, in
                               convnext_kernel_size=7, drop_path_rate=0.1)
     elif netG == 'convnext_24blocks':
         net = ConvNeXtGenerator(input_nc, output_nc, ngf, norm_layer=norm_layer, use_dropout=use_dropout, 
+                              no_antialias=no_antialias, no_antialias_up=no_antialias_up, n_blocks=24, opt=opt,
+                              convnext_kernel_size=7, drop_path_rate=0.2)
+    elif netG == 'convnextv2_9blocks':
+        net = ConvNeXtV2Generator(input_nc, output_nc, ngf, norm_layer=norm_layer, use_dropout=use_dropout, 
+                              no_antialias=no_antialias, no_antialias_up=no_antialias_up, n_blocks=9, opt=opt,
+                              convnext_kernel_size=7, drop_path_rate=0.1)
+    elif netG == 'convnextv2_24blocks':
+        net = ConvNeXtV2Generator(input_nc, output_nc, ngf, norm_layer=norm_layer, use_dropout=use_dropout, 
                               no_antialias=no_antialias, no_antialias_up=no_antialias_up, n_blocks=24, opt=opt,
                               convnext_kernel_size=7, drop_path_rate=0.2)
     else:
@@ -1904,154 +1914,3 @@ class UpsampleConverse(nn.Module):
     def forward(self, x):
         return self.converse(x)
     
-
-# ============================================
-# 主生成器类
-# ============================================
-
-class ConvNeXtBlock(nn.Module):
-    """
-    ConvNeXt Block: 内部使用 nn.LayerNorm
-    """
-    def __init__(self, dim, drop_path=0., layer_scale_init_value=1e-6, kernel_size=7):
-        super().__init__()
-        self.dwconv = nn.Conv2d(dim, dim, kernel_size=kernel_size, 
-                               padding=kernel_size//2, groups=dim)
-        self.norm = nn.LayerNorm(dim, eps=1e-6)
-        self.pwconv1 = nn.Linear(dim, 4 * dim)
-        self.act = nn.GELU()
-        self.pwconv2 = nn.Linear(4 * dim, dim)
-        self.gamma = nn.Parameter(layer_scale_init_value * torch.ones(dim), 
-                                  requires_grad=True) if layer_scale_init_value > 0 else None
-        self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
-
-    def forward(self, x):
-        input = x
-        x = self.dwconv(x)
-        x = x.permute(0, 2, 3, 1).contiguous()
-        x = self.norm(x)
-        x = self.pwconv1(x)
-        x = self.act(x)
-        x = self.pwconv2(x)
-        if self.gamma is not None:
-            x = self.gamma * x
-        x = x.permute(0, 3, 1, 2).contiguous()
-        x = input + self.drop_path(x)
-        return x
-
-class DropPath(nn.Module):
-    def __init__(self, drop_prob=0.):
-        super().__init__()
-        self.drop_prob = drop_prob
-
-    def forward(self, x):
-        if self.drop_prob == 0. or not self.training:
-            return x
-        keep_prob = 1 - self.drop_prob
-        shape = (x.shape[0],) + (1,) * (x.ndim - 1)
-        random_tensor = keep_prob + torch.rand(shape, dtype=x.dtype, device=x.device)
-        random_tensor.floor_()
-        return x.div(keep_prob) * random_tensor
-
-class ConvNeXtGenerator(nn.Module):
-    """
-    ConvNeXt Generator - 标准 Sequential 风格，类似 ResnetGenerator
-    先用标准 Upsample 调试，确认无误后再换 Converse2D
-    """
-    def __init__(self, input_nc, output_nc, ngf=64, norm_layer=None, 
-                 use_dropout=False, n_blocks=6, padding_type='reflect', 
-                 no_antialias=False, no_antialias_up=False, opt=None,
-                 convnext_kernel_size=7,      
-                 drop_path_rate=0.1):
-        
-        super(ConvNeXtGenerator, self).__init__()
-        self.opt = opt
-        self.n_blocks = n_blocks
-        
-        # 构建模型列表（ResnetGenerator 风格）
-        model = []
-        
-        # --- 入口 ---
-        model += [nn.ReflectionPad2d(3),
-                  nn.Conv2d(input_nc, ngf, kernel_size=7, padding=0),
-                  nn.GroupNorm(1, ngf, eps=1e-6),
-                  nn.GELU()]
-
-        n_downsampling = 2
-        
-        # --- 下采样 ---
-        for i in range(n_downsampling):
-            mult = 2 ** i
-            in_ch = ngf * mult
-            out_ch = ngf * mult * 2
-            
-            if no_antialias:
-                model += [nn.Conv2d(in_ch, out_ch, 3, stride=2, padding=1),
-                          nn.GroupNorm(1, out_ch, eps=1e-6),
-                          nn.GELU()]
-            else:
-                model += [nn.Conv2d(in_ch, out_ch, 3, stride=1, padding=1),
-                          nn.GroupNorm(1, out_ch, eps=1e-6),
-                          nn.GELU(),
-                          Downsample(out_ch)]  # 你原来的 Downsample
-
-        # --- ConvNeXt Blocks (核心) ---
-        mult = 2 ** n_downsampling
-        dpr = [x.item() for x in torch.linspace(0, drop_path_rate, n_blocks)]
-        
-        for i in range(n_blocks):
-            model += [ConvNeXtBlock(ngf * mult, 
-                                   drop_path=dpr[i],
-                                   kernel_size=convnext_kernel_size)]
-
-        # --- 上采样 (标准版，用于 debug) ---
-        for i in range(n_downsampling):
-            mult = 2 ** (n_downsampling - i)
-            in_ch = ngf * mult
-            out_ch = int(ngf * mult / 2)
-            
-            if no_antialias_up:
-                # 标准 ConvTranspose
-                model += [nn.ConvTranspose2d(in_ch, out_ch, 3, stride=2, 
-                                            padding=1, output_padding=1),
-                          nn.GroupNorm(1, out_ch, eps=1e-6),
-                          nn.GELU()]
-            else:
-                # 标准抗锯齿上采样（使用你原来的 Upsample 类）
-                model += [Upsample(in_ch),  # 你原来的 Upsample（非 Converse）
-                          nn.Conv2d(in_ch, out_ch, 3, padding=1),
-                          nn.GroupNorm(1, out_ch, eps=1e-6),
-                          nn.GELU()]
-
-        # --- 出口 ---
-        model += [nn.ReflectionPad2d(3),
-                  nn.Conv2d(ngf, output_nc, kernel_size=7, padding=0),
-                  nn.Tanh()]
-
-        self.model = nn.Sequential(*model)
-        
-        # 打印调试信息
-        n_params = sum(p.numel() for p in self.parameters()) / 1e6
-        print(f"[ConvNeXtGenerator] n_blocks={n_blocks}, "
-              f"kernel={convnext_kernel_size}, params={n_params:.2f}M")
-
-    def forward(self, input, layers=[], encode_only=False):
-        """
-        完全兼容 CUT 的多层特征提取接口
-        """
-        
-        if -1 in layers:
-            layers.append(len(self.model))
-        
-        if len(layers) > 0:
-            feat = input
-            feats = []
-            for layer_id, layer in enumerate(self.model):
-                feat = layer(feat)
-                if layer_id in layers:
-                    feats.append(feat)
-                if layer_id == layers[-1] and encode_only:
-                    return feats
-            return feat, feats
-        else:
-            return self.model(input)

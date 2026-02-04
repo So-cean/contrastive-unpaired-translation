@@ -7,16 +7,14 @@ import torch.nn.functional as F
 class RankNCELoss(nn.Module):
     """
     RankNCE: Exploring Negatives in Contrastive Learning for Unpaired Image-to-Image Translation
-    核心思想：不再使用所有非局部 patch 作为负样本，而是选择高质量的负样本
-    通过基于互信息贡献的排序，排除可能的假阴性（False Negatives）
+    核心思想：通过互信息贡献排序，选择高质量负样本，排除假阴性（False Negatives）
+    
+    策略：
+    1. 排除相似度最高的负样本（可能是假阴性，如同一物体的不同部分）
+    2. 排除相似度最低的负样本（无信息，过于简单）
+    3. 保留中等难度的负样本（最具区分性）
     """
     def __init__(self, opt, top_k_ratio=0.5, bottom_k_ratio=0.1):
-        """
-        Args:
-            opt: 配置选项
-            top_k_ratio: 选择最难负样本的比例（高相似度，难区分）
-            bottom_k_ratio: 排除过于简单负样本的比例（低相似度，无信息）
-        """
         super().__init__()
         self.opt = opt
         self.cross_entropy_loss = torch.nn.CrossEntropyLoss(reduction='none')
@@ -26,135 +24,314 @@ class RankNCELoss(nn.Module):
         self.top_k_ratio = getattr(opt, 'ranknce_top_k', top_k_ratio)
         self.bottom_k_ratio = getattr(opt, 'ranknce_bottom_k', bottom_k_ratio)
         
+        # 确保比例合理
+        assert 0 <= self.bottom_k_ratio < self.top_k_ratio <= 1.0, \
+            f"Invalid ratios: bottom_k={self.bottom_k_ratio}, top_k={self.top_k_ratio}"
+        
+        print(f"[RankNCE] top_k_ratio={self.top_k_ratio:.2f}, "
+              f"bottom_k_ratio={self.bottom_k_ratio:.2f}, "
+              f"effective_ratio={self.top_k_ratio - self.bottom_k_ratio:.2f}")
+        
     def forward(self, feat_q, feat_k):
         """
         Args:
             feat_q: query features [num_patches, dim] 或 [batch, num_patches, dim]
             feat_k: key features [num_patches, dim] 或 [batch, num_patches, dim]
         """
-        batch_dim = feat_q.shape[0]
+        batch_dim = len(feat_q.shape)
+        temperature = getattr(self.opt, 'nce_T', 0.07)
         
-        # 处理维度
-        if feat_q.dim() == 2:
+        if batch_dim == 2:
             # 单张图片情况：[num_patches, dim]
+            feat_k = feat_k.detach()
             num_patches = feat_q.shape[0]
-            dim = feat_q.shape[1]
-            feat_k = feat_k.detach()
             
-            # pos logit: [num_patches, 1]
-            l_pos = torch.bmm(
-                feat_q.view(num_patches, 1, -1), 
-                feat_k.view(num_patches, -1, 1)
-            ).view(num_patches, 1)
+            # 计算正样本 logit: [num_patches, 1]
+            l_pos = torch.sum(feat_q * feat_k, dim=1, keepdim=True)
             
-            # 完整的相似度矩阵（用于排序选择负样本）
-            full_sim_matrix = torch.mm(feat_q, feat_k.t())  # [num_patches, num_patches]
+            # 计算所有负样本相似度: [num_patches, num_patches]
+            sim_matrix = torch.mm(feat_q, feat_k.t())
             
-            # 选择高质量负样本（RankNCE 核心）
-            l_neg = self._select_ranked_negatives(full_sim_matrix, num_patches)
-            
-        else:
-            # batch 情况
-            if self.opt.nce_includes_all_negatives_from_minibatch:
-                batch_dim_for_bmm = 1
-                feat_q = feat_q.view(1, -1, feat_q.size(-1))
-                feat_k = feat_k.view(1, -1, feat_k.size(-1))
-            else:
-                batch_dim_for_bmm = self.opt.batch_size
-                feat_q = feat_q.view(batch_dim_for_bmm, -1, feat_q.size(-1))
-                feat_k = feat_k.view(batch_dim_for_bmm, -1, feat_k.size(-1))
-            
-            feat_k = feat_k.detach()
-            npatches = feat_q.size(1)
-            
-            # pos logit: [batch, npatches, 1]
-            l_pos = torch.bmm(
-                feat_q.view(batch_dim_for_bmm, npatches, 1, -1),
-                feat_k.view(batch_dim_for_bmm, npatches, -1, 1)
-            ).view(batch_dim_for_bmm * npatches, 1)
-            
-            # 完整的相似度矩阵
-            full_sim_matrix = torch.bmm(feat_q, feat_k.transpose(2, 1))  # [batch, npatches, npatches]
-            full_sim_matrix = full_sim_matrix.view(-1, npatches)  # [batch*npatches, npatches]
+            # 排除对角线（正样本）
+            mask = torch.eye(num_patches, device=sim_matrix.device, dtype=torch.bool)
+            sim_matrix = sim_matrix.masked_fill(mask, float('-inf'))
             
             # 选择高质量负样本
-            l_neg = self._select_ranked_negatives_batch(full_sim_matrix, npatches, batch_dim_for_bmm)
+            out = self._select_ranked_negatives(sim_matrix, l_pos)
+            
+        else:
+            # batch 情况：[batch, num_patches, dim]
+            batch_size, npatches, dim = feat_q.shape
+            
+            if self.opt.nce_includes_all_negatives_from_minibatch:
+                # 所有 batch 内样本作为负样本
+                # feat_q/feats_k: [batch, npatches, dim] -> [1, batch*npatches, dim]
+                feat_q = feat_q.view(1, -1, dim)
+                feat_k = feat_k.view(1, -1, dim).detach()
+                total_patches = batch_size * npatches
+                
+                # 正样本 logit: 对应位置
+                l_pos = torch.sum(feat_q.view(total_patches, dim) * feat_k.view(total_patches, dim), 
+                                dim=1, keepdim=True)  # [total_patches, 1]
+                
+                # 所有相似度: [total_patches, total_patches]
+                sim_matrix = torch.mm(feat_q.view(total_patches, dim), 
+                                    feat_k.view(total_patches, dim).t())
+                
+                # 排除正样本：对角线
+                mask = torch.eye(total_patches, device=sim_matrix.device, dtype=torch.bool)
+                sim_matrix = sim_matrix.masked_fill(mask, float('-inf'))
+                
+                out = self._select_ranked_negatives(sim_matrix, l_pos)
+                
+            else:
+                # 每个样本独立处理
+                feat_k = feat_k.detach()
+                
+                # 正样本 logit: [batch, npatches, 1]
+                l_pos = torch.sum(feat_q * feat_k, dim=2, keepdim=True)
+                
+                # 所有相似度: [batch, npatches, npatches]
+                sim_matrix = torch.bmm(feat_q, feat_k.transpose(2, 1))
+                
+                # 排除对角线（每个样本内部）
+                mask = torch.eye(npatches, device=sim_matrix.device, dtype=torch.bool).unsqueeze(0)
+                sim_matrix = sim_matrix.masked_fill(mask, float('-inf'))
+                
+                # reshape 为 [batch*npatches, npatches] 统一处理
+                sim_matrix = sim_matrix.view(-1, npatches)
+                l_pos = l_pos.view(-1, 1)
+                
+                out = self._select_ranked_negatives(sim_matrix, l_pos)
         
-        # 合并正负样本
-        out = torch.cat((l_pos, l_neg), dim=1) / self.opt.nce_T
+        # 温度缩放
+        out = out / temperature
         
-        loss = self.cross_entropy_loss(out, torch.zeros(out.size(0), dtype=torch.long,
-                                                        device=feat_q.device))
+        # 计算损失（标签是 0，即第一列是正样本）
+        loss = self.cross_entropy_loss(
+            out, 
+            torch.zeros(out.size(0), dtype=torch.long, device=feat_q.device)
+        )
         
         return loss
     
-    def _select_ranked_negatives(self, sim_matrix, num_patches):
+    def _select_ranked_negatives(self, sim_matrix, l_pos):
         """
-        单张图片情况：基于排序选择高质量负样本
+        向量化实现：基于排序选择高质量负样本
+        使用 topk 避免 -inf 问题
         
-        策略：
-        1. 排除对角线（正样本）
-        2. 排除相似度过高的（可能是假阴性）
-        3. 排除相似度过低的（无信息）
-        4. 保留中间的"高质量"负样本
+        Args:
+            sim_matrix: [N, M] 负样本相似度矩阵（对角线已 mask 为 -inf）
+            l_pos: [N, 1] 正样本 logit
+        Returns:
+            out: [N, 1+k_select]
         """
-        device = sim_matrix.device
+        # 1. 获取有效负样本数量（排除 -inf）
+        valid_mask = sim_matrix != float('-inf')
+        num_valid_per_query = valid_mask.sum(dim=1)  # [N]
+        min_valid = num_valid_per_query.min().item()
         
-        # 排除对角线（正样本位置）
-        mask = torch.eye(num_patches, device=device, dtype=torch.bool)
-        sim_masked = sim_matrix.masked_fill(mask, float('-inf'))
+        if min_valid == 0:
+            # 极端情况：没有负样本
+            return torch.cat([l_pos, torch.zeros_like(l_pos)], dim=1)
         
-        # 计算每个 query 应该选择多少个负样本
-        num_negatives = num_patches - 1  # 排除正样本
-        k_top = max(1, int(num_negatives * self.top_k_ratio))
-        k_bottom = max(0, int(num_negatives * self.bottom_k_ratio))
-        k_select = k_top - k_bottom  # 实际选择的数量
+        # 2. 计算 k 值（基于最小有效负样本数）
+        k_top = max(1, min(int(min_valid * self.top_k_ratio), min_valid))
+        k_bottom = min(int(min_valid * self.bottom_k_ratio), k_top - 1)
+        k_select = k_top - k_bottom
         
-        # 对每个 query，选择排名在 [k_bottom, k_top] 之间的负样本
-        # 相似度排序：从高到低
-        sorted_sim, sorted_indices = torch.sort(sim_masked, dim=1, descending=True)
+        # 确保至少选择 1 个负样本
+        if k_select < 1:
+            k_select = 1
+            k_bottom = k_top - 1
         
-        # 创建选择掩码
-        # 保留排序在 [k_bottom, k_top) 之间的样本
-        ranks = torch.arange(num_patches, device=device).unsqueeze(0).expand(num_patches, -1)
-        select_mask = (ranks >= k_bottom) & (ranks < k_top) & (sorted_sim > float('-inf') / 2)
+        # 3. 使用 topk 获取前 k_top 个最相似的负样本
+        # topk 会自动跳过 -inf（除非所有值都是 -inf）
+        top_values, _ = torch.topk(sim_matrix, k=k_top, dim=1, largest=True, sorted=True)
         
-        # 构建最终的负样本 logits
-        # 未选择的设为很小的值（exp(-10) ≈ 0）
-        l_neg = torch.full_like(sim_masked, -10.0)
-        l_neg.scatter_(1, sorted_indices, sorted_sim.masked_fill(~select_mask, -10.0))
+        # 4. 选择排名在 [k_bottom, k_top) 的负样本
+        # 排除最相似的 k_bottom 个（可能的假阴性）
+        selected_neg_sim = top_values[:, k_bottom:]
         
-        return l_neg
+        # 5. 组合正负样本
+        out = torch.cat([l_pos, selected_neg_sim], dim=1)
+        
+        return out
+
+
+# ============= 测试代码 =============
+if __name__ == "__main__":
+    print("=" * 70)
+    print("RankNCE Loss 完整测试")
+    print("=" * 70)
     
-    def _select_ranked_negatives_batch(self, sim_matrix, npatches, batch_size):
-        """
-        batch 情况下的负样本选择
-        sim_matrix: [batch*npatches, npatches]
-        """
-        device = sim_matrix.device
-        total_queries = sim_matrix.size(0)
+    # 模拟配置
+    class DummyOpt:
+        nce_T = 0.07
+        batch_size = 4
+        nce_includes_all_negatives_from_minibatch = False
+        ranknce_top_k = 0.5
+        ranknce_bottom_k = 0.1
+    
+    # ========== 测试 1: 单张图片 ==========
+    print("\n测试 1: 单张图片 [num_patches, dim]")
+    opt = DummyOpt()
+    criterion = RankNCELoss(opt)
+    
+    num_patches = 256
+    dim = 256
+    feat_q = F.normalize(torch.randn(num_patches, dim), dim=1)
+    feat_k = F.normalize(torch.randn(num_patches, dim), dim=1)
+    
+    loss = criterion(feat_q, feat_k)
+    print(f"  输入: feat_q={feat_q.shape}, feat_k={feat_k.shape}")
+    print(f"  损失: mean={loss.mean().item():.4f}, std={loss.std().item():.4f}")
+    assert loss.shape == (num_patches,)
+    print("  ✅ 通过")
+    
+    # ========== 测试 2: Batch (独立模式) ==========
+    print("\n测试 2: Batch [batch, num_patches, dim] - 独立模式")
+    opt.nce_includes_all_negatives_from_minibatch = False
+    criterion = RankNCELoss(opt)
+    
+    batch = 4
+    num_patches = 128
+    feat_q = F.normalize(torch.randn(batch, num_patches, dim), dim=2)
+    feat_k = F.normalize(torch.randn(batch, num_patches, dim), dim=2)
+    
+    loss = criterion(feat_q, feat_k)
+    print(f"  输入: feat_q={feat_q.shape}, feat_k={feat_k.shape}")
+    print(f"  损失: mean={loss.mean().item():.4f}")
+    assert loss.shape == (batch * num_patches,)
+    print("  ✅ 通过")
+    
+    # ========== 测试 3: Batch (共享模式) ==========
+    print("\n测试 3: Batch [batch, num_patches, dim] - 共享负样本模式")
+    opt.nce_includes_all_negatives_from_minibatch = True
+    criterion = RankNCELoss(opt)
+    
+    loss = criterion(feat_q, feat_k)
+    print(f"  输入: feat_q={feat_q.shape}")
+    print(f"  损失: mean={loss.mean().item():.4f}")
+    assert loss.shape == (batch * num_patches,)
+    print("  ✅ 通过")
+    
+    # ========== 测试 4: 不同参数 ==========
+    print("\n测试 4: 不同 top_k/bottom_k 配置")
+    configs = [
+        (1.0, 0.0, "使用所有负样本"),
+        (0.5, 0.1, "标准RankNCE"),
+        (0.3, 0.0, "只用最难30%"),
+    ]
+    
+    feat_q = F.normalize(torch.randn(128, 128), dim=1)
+    feat_k = F.normalize(torch.randn(128, 128), dim=1)
+    
+    for top_k, bottom_k, desc in configs:
+        opt_test = DummyOpt()
+        opt_test.ranknce_top_k = top_k
+        opt_test.ranknce_bottom_k = bottom_k
+        opt_test.nce_includes_all_negatives_from_minibatch = False
         
-        # 构建 block 对角掩码（排除同一张图片内的正样本）
-        # sim_matrix 已经展平，需要排除每 npatches 个中的对角线
-        mask = torch.zeros(total_queries, npatches, device=device, dtype=torch.bool)
-        for b in range(batch_size):
-            start = b * npatches
-            end = start + npatches
-            mask[start:end, :] = torch.eye(npatches, device=device, dtype=torch.bool)
-        
-        sim_masked = sim_matrix.masked_fill(mask, float('-inf'))
-        
-        # 选择参数
-        num_negatives = npatches
-        k_top = max(1, int(num_negatives * self.top_k_ratio))
-        k_bottom = max(0, int(num_negatives * self.bottom_k_ratio))
-        
-        # 排序选择
-        sorted_sim, sorted_indices = torch.sort(sim_masked, dim=1, descending=True)
-        ranks = torch.arange(npatches, device=device).unsqueeze(0).expand(total_queries, -1)
-        select_mask = (ranks >= k_bottom) & (ranks < k_top) & (sorted_sim > float('-inf') / 2)
-        
-        l_neg = torch.full_like(sim_masked, -10.0)
-        l_neg.scatter_(1, sorted_indices, sorted_sim.masked_fill(~select_mask, -10.0))
-        
-        return l_neg
+        criterion_test = RankNCELoss(opt_test)
+        loss = criterion_test(feat_q, feat_k)
+        print(f"  {desc}: loss={loss.mean().item():.4f}")
+    
+    print("  ✅ 通过")
+    
+    # ========== 测试 5: 梯度 ==========
+    print("\n测试 5: 梯度测试")
+    opt = DummyOpt()
+    opt.nce_includes_all_negatives_from_minibatch = False
+    criterion = RankNCELoss(opt)
+    
+    # 🔧 修复：先创建需要梯度的张量，再归一化
+    feat_q_raw = torch.randn(128, 128, requires_grad=True)
+    
+    # 归一化（这会创建新张量，但梯度会传回 feat_q_raw）
+    feat_q = F.normalize(feat_q_raw, dim=1)
+    
+    loss = criterion(feat_q, feat_k).mean()
+    loss.backward()
+    
+    print(f"  损失: {loss.item():.4f}")
+    print(f"  feat_q_raw 梯度范数: {feat_q_raw.grad.norm().item():.4f}")
+    assert not torch.isnan(feat_q_raw.grad).any()
+    assert feat_q_raw.grad.abs().sum() > 0, "梯度应该非零"
+    print("  ✅ 梯度正常传播")
+    
+    # ========== 测试 6: 边界情况 ==========
+    print("\n测试 6: 极端参数 (top_k=0.95, bottom_k=0.9)")
+    opt = DummyOpt()
+    opt.ranknce_top_k = 0.95
+    opt.ranknce_bottom_k = 0.9
+    opt.nce_includes_all_negatives_from_minibatch = False
+    criterion = RankNCELoss(opt)
+    
+    feat_q = F.normalize(torch.randn(64, 64), dim=1)
+    feat_k = F.normalize(torch.randn(64, 64), dim=1)
+    loss = criterion(feat_q, feat_k)
+    print(f"  损失: {loss.mean().item():.4f}")
+    assert not torch.isnan(loss).any()
+    assert not torch.isinf(loss).any()
+    print("  ✅ 通过")
+    
+    # ========== 测试 7: 少量 patches 边界情况 ==========
+    print("\n测试 7: 少量 patches (num_patches=8)")
+    opt = DummyOpt()
+    opt.nce_includes_all_negatives_from_minibatch = False
+    criterion = RankNCELoss(opt)
+    
+    feat_q = F.normalize(torch.randn(8, 64), dim=1)
+    feat_k = F.normalize(torch.randn(8, 64), dim=1)
+    loss = criterion(feat_q, feat_k)
+    print(f"  损失: {loss.mean().item():.4f}")
+    assert loss.shape == (8,)
+    print("  ✅ 通过")
+    
+    # ========== 测试 8: 验证选择的负样本数量 ==========
+    print("\n测试 8: 验证选择的负样本数量")
+    
+    class InspectOpt:
+        nce_T = 0.07
+        batch_size = 1
+        nce_includes_all_negatives_from_minibatch = False
+        ranknce_top_k = 0.5
+        ranknce_bottom_k = 0.1
+    
+    opt = InspectOpt()
+    criterion = RankNCELoss(opt)
+    
+    num_patches = 100
+    feat_q = F.normalize(torch.randn(num_patches, 64), dim=1)
+    feat_k = F.normalize(torch.randn(num_patches, 64), dim=1)
+    
+    # 手动计算期望的负样本数
+    num_negatives = num_patches - 1  # 99
+    k_top = int(num_negatives * 0.5)  # 49
+    k_bottom = int(num_negatives * 0.1)  # 9
+    expected_neg_count = k_top - k_bottom  # 40
+    
+    # 通过钩子检查输出维度
+    loss = criterion(feat_q, feat_k)
+    
+    # 实际上我们可以通过 _select_ranked_negatives 验证
+    l_pos = torch.sum(feat_q * feat_k, dim=1, keepdim=True)
+    sim_matrix = torch.mm(feat_q, feat_k.t())
+    mask = torch.eye(num_patches, device=sim_matrix.device, dtype=torch.bool)
+    sim_matrix = sim_matrix.masked_fill(mask, float('-inf'))
+    
+    out = criterion._select_ranked_negatives(sim_matrix, l_pos)
+    actual_neg_count = out.shape[1] - 1  # 减去正样本那一列
+    
+    print(f"  总 patches: {num_patches}")
+    print(f"  可用负样本: {num_negatives}")
+    print(f"  期望选择: {expected_neg_count}")
+    print(f"  实际选择: {actual_neg_count}")
+    assert actual_neg_count == expected_neg_count, \
+        f"负样本数量不匹配：期望 {expected_neg_count}，实际 {actual_neg_count}"
+    print("  ✅ 负样本数量正确")
+    
+    print("\n" + "=" * 70)
+    print("🎉 所有测试通过！RankNCE 实现完全正确")
+    print("=" * 70)

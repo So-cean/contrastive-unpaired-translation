@@ -231,8 +231,8 @@ class ConvNeXtGenerator(nn.Module):
 opt = type('', (), {})()  # 创建一个空对象模拟 opt
 opt.input_nc = 1
 opt.crop_size = 256
-opt.nce_layers = '1,8,12,18,24,30,35'       
-netG = ConvNeXtGenerator(input_nc=opt.input_nc, output_nc=1, ngf=94, n_blocks=24,
+opt.nce_layers = '1,8,12,16,20'       
+netG = ConvNeXtGenerator(input_nc=opt.input_nc, output_nc=1, ngf=94, n_blocks=9,
                         no_antialias=False, no_antialias_up=False)
 
 

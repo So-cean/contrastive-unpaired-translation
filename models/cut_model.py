@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import torch
 from .base_model import BaseModel
@@ -39,9 +40,11 @@ class CUTModel(BaseModel):
                             type=util.str2bool, nargs='?', const=True, default=False,
                             help="Enforce flip-equivariance as additional regularization. It's used by FastCUT, but not CUT")
         
-        parser.add_argument('--lambda_SSIM', type=float, default=10, help='weight for SSIM loss')
-        parser.add_argument('--lambda_canny', type=float, default=10, help='weight for Canny edge consistency loss')
-       
+        parser.add_argument('--lambda_SSIM', type=float, default=1, help='weight for SSIM loss')
+        parser.add_argument('--lambda_canny', type=float, default=1, help='weight for Canny edge consistency loss')
+        parser.add_argument('--lambda_elastic', type=float, default=1, help='weight for adaptive elastic loss')
+        parser.add_argument('--lambda_perceptual', type=float, default=1.0, help='weight for VGG perceptual loss')
+        
         parser.set_defaults(pool_size=0)  # no image pooling
 
         opt, _ = parser.parse_known_args()
@@ -64,7 +67,7 @@ class CUTModel(BaseModel):
 
         # specify the training losses you want to print out.
         # The training/test scripts will call <BaseModel.get_current_losses>
-        self.loss_names = ['G_GAN', 'D_real', 'D_fake', 'G', 'NCE', 'Idt', 'SSIM', 'Canny']
+        self.loss_names = ['G_GAN', 'D_real', 'D_fake', 'G', 'D', 'NCE', 'Idt', 'SSIM', 'Canny', 'Elastic', 'Perceptual']
         self.visual_names = ['real_A', 'fake_B', 'real_B']
         self.nce_layers = [int(i) for i in self.opt.nce_layers.split(',')]
 
@@ -96,8 +99,134 @@ class CUTModel(BaseModel):
             self.optimizer_D = torch.optim.Adam(self.netD.parameters(), lr=opt.lr, betas=(opt.beta1, opt.beta2))
             self.optimizers.append(self.optimizer_G)
             self.optimizers.append(self.optimizer_D)
-            
+        
+        self._init_perceptual_loss()
         # self.ssim_loss = SSIM(data_range=2.0, size_average=True, channel=opt.output_nc)
+    def evaluate_quality(self, src, tgt):
+        """综合评估生成质量"""
+        src_01 = (src + 1) / 2
+        tgt_01 = (tgt + 1) / 2
+        
+        # 1. 结构相似度（越高越好）
+        from pytorch_msssim import ssim
+        ssim_score = ssim(src_01, tgt_01, data_range=1.0, size_average=True).item()
+        
+        # 2. 边缘保持率（越高越好）
+        brain_mask = (src_01 > 0.1).float()
+        kernel = torch.ones(1, 1, 9, 9, device=brain_mask.device) / 81.0
+        eroded = F.conv2d(brain_mask, kernel, padding=4)
+        eroded = (eroded > 0.98).float()
+        edge_mask = brain_mask - eroded
+        
+        if edge_mask.sum() > 0:
+            edge_lost = ((tgt_01 * edge_mask) < 0.15).sum()
+            edge_preserve_rate = 1 - (edge_lost / edge_mask.sum()).item()
+        else:
+            edge_preserve_rate = 1.0
+        
+        # 3. 清晰度（高频能量，越高越清晰）
+        sobel_x = torch.tensor([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], 
+                            dtype=src.dtype, device=src.device).view(1, 1, 3, 3)
+        sobel_y = torch.tensor([[-1, -2, -1], [0, 0, 0], [1, 2, 1]], 
+                            dtype=src.dtype, device=src.device).view(1, 1, 3, 3)
+        
+        grad_tgt = torch.sqrt(
+            F.conv2d(tgt_01, sobel_x, padding=1)**2 + 
+            F.conv2d(tgt_01, sobel_y, padding=1)**2 + 1e-8
+        )
+        sharpness = grad_tgt.mean().item()
+        
+        # 4. 综合分数
+        quality_score = (
+            0.4 * ssim_score +          # 结构相似度40%
+            0.4 * edge_preserve_rate +  # 边缘保持40%
+            0.2 * min(sharpness / 0.2, 1.0)  # 清晰度20%（归一化）
+        )
+        
+        return {
+            'ssim': ssim_score,
+            'edge_preserve': edge_preserve_rate,
+            'sharpness': sharpness,
+            'quality_score': quality_score
+        }
+
+
+    def _init_perceptual_loss(self):
+        """
+        初始化 VGG19 用于感知loss
+        """
+        from torchvision import models
+        
+        print("Initializing VGG19 for perceptual loss...")
+        
+        # 加载预训练的 VGG19
+        vgg19 = models.vgg19(pretrained=True)
+        
+        # 提取特征层（到 relu5_4，即第 36 层）
+        self.vgg = vgg19.features[:36].eval()
+        
+        # 移动到设备
+        self.vgg.to(self.device)
+        
+        # 冻结参数
+        for param in self.vgg.parameters():
+            param.requires_grad = False
+        
+        # 选择用于计算loss的层
+        # relu1_2(3), relu2_2(8), relu3_4(17), relu4_4(26), relu5_4(35)
+        self.perceptual_layers = [3, 8, 17, 26, 35]
+        self.perceptual_weights = [1.0/32, 1.0/16, 1.0/8, 1.0/4, 1.0]  # 深层权重更大
+        
+        print("✅ VGG19 perceptual loss initialized successfully")
+        print(f"   Using layers: {self.perceptual_layers}")
+            
+    
+    def compute_perceptual_loss(self, src, tgt):
+        """
+        计算 VGG 感知 loss
+        
+        这个loss帮助保持图像的纹理和高层语义特征
+        对��减少模糊非常有效
+        """
+        if not hasattr(self, 'vgg') or self.vgg is None:
+            return torch.tensor(0.0, device=src.device)
+        
+        # 转换到 [0, 1]
+        src_01 = (src + 1) / 2
+        tgt_01 = (tgt + 1) / 2
+        
+        # 如果是单通道，复制为3通道（VGG需要3通道输入）
+        if src_01.shape[1] == 1:
+            src_01 = src_01.repeat(1, 3, 1, 1)
+            tgt_01 = tgt_01.repeat(1, 3, 1, 1)
+        
+        # ImageNet 归一化
+        mean = torch.tensor([0.485, 0.456, 0.406], device=src.device).view(1, 3, 1, 1)
+        std = torch.tensor([0.229, 0.224, 0.225], device=src.device).view(1, 3, 1, 1)
+        
+        src_norm = (src_01 - mean) / std
+        tgt_norm = (tgt_01 - mean) / std
+        
+        # 提取多层特征并计算loss
+        loss = 0.0
+        src_feat = src_norm
+        tgt_feat = tgt_norm
+        
+        current_layer = 0
+        for i, layer in enumerate(self.vgg):
+            src_feat = layer(src_feat)
+            tgt_feat = layer(tgt_feat)
+            
+            # 如果当前层是我们要计算loss的层
+            if i in self.perceptual_layers:
+                layer_idx = self.perceptual_layers.index(i)
+                weight = self.perceptual_weights[layer_idx]
+                
+                # L1 loss on features
+                layer_loss = F.l1_loss(src_feat, tgt_feat)
+                loss += weight * layer_loss
+        
+        return loss
 
     # ----------- SSIM -----------
     def compute_ssim_loss(self, src, tgt):
@@ -183,38 +312,162 @@ class CUTModel(BaseModel):
         loss = criterion(pred, target)        
         
         return loss
+    
+    def compute_adaptive_elastic_loss(self, src, tgt, window_size=7):
+        """
+        无监督自适应弹性约束损失         
+        核心思想：不依赖绝对强度值，而是依赖局部相对关系和变化幅度的一致性
+        src: [-1,1],
+        tgt: [-1,1]
+        """
+        src = (src + 1) / 2  # 映射到 [0, 1]
+        tgt = (tgt + 1) / 2
+        b, c, h, w = src.shape
+        
+        # 1. 计算局部统计特征（使用可分离卷积提高效率）
+        pad = window_size // 2
+        
+        # 平均池化获取局部均值
+        local_mean_src = F.avg_pool2d(src, window_size, stride=1, padding=pad, count_include_pad=False)
+        local_mean_tgt = F.avg_pool2d(tgt, window_size, stride=1, padding=pad, count_include_pad=False)
+        
+        # 局部标准差（使用近似计算避免开方）
+        local_sq_src = F.avg_pool2d(src**2, window_size, stride=1, padding=pad, count_include_pad=False)
+        local_sq_tgt = F.avg_pool2d(tgt**2, window_size, stride=1, padding=pad, count_include_pad=False)
+        local_std_src = torch.sqrt(torch.clamp(local_sq_src - local_mean_src**2, min=0.0) + 1e-8)
+        
+        # 2. 自适应弹性阈值（基于局部对比度动态调整）
+        # 高对比度区域（如WM-GM边界）允许较大变化，低对比度区域（如均匀组织）严格约束
+        local_contrast = local_std_src  # 用局部std作为对比度指标
+        elasticity = torch.tanh(local_contrast * 5.0) * 0.2 + 0.1  # 范围 [0.1, 0.3]
+        
+        # 3. 计算相对变化（相对于局部均值的偏差变化）
+        src_rel = src - local_mean_src  # 局部相对强度
+        tgt_rel = tgt - local_mean_tgt
+        diff_rel = tgt_rel - src_rel
+        
+        abs_diff = torch.abs(diff_rel)
+        
+        # Huber Loss with element-wise beta (elasticity)
+        mask_elastic  = abs_diff <= elasticity
+        mask_rigid  = ~mask_elastic
+        loss_elastic = (0.5 * diff_rel ** 2 / (elasticity + 1e-8)) * mask_elastic.float()
+        loss_rigid = (elasticity * (abs_diff - 0.5 * elasticity)) * mask_rigid.float()
+        
+        loss_total = (loss_elastic + loss_rigid).mean() # range [0, 0.5*elasticity]，平均后通常较小
+        
+        # 结构相关性
+        corr_loss = self.local_correlation_loss(src, tgt, window_size)
+        
+        return loss_total + 0.2 * corr_loss
+    
+    def local_correlation_loss(self, src, tgt, window_size=7):
+        """
+        局部相关性损失：确保harmonization后局部结构关系保持
+        """
+        pad = window_size // 2
+        src_patches = F.unfold(src, window_size, padding=pad) # [B, C*k*k, H*W]
+        tgt_patches = F.unfold(tgt, window_size, padding=pad)
+        
+        # 使用标准化互相关（NCC）代替Spearman，更快且效果相当
+        src_mean = src_patches.mean(dim=1, keepdim=True) # [B, 1, H*W]
+        tgt_mean = tgt_patches.mean(dim=1, keepdim=True)
+        
+        src_std = torch.std(src_patches, dim=1, keepdim=True, unbiased=False)
+        tgt_std = torch.std(tgt_patches, dim=1, keepdim=True, unbiased=False)
+        
+        src_std = torch.clamp(src_std, min=1e-6)
+        tgt_std = torch.clamp(tgt_std, min=1e-6)
+        
+        # 计算协方差
+        src_centered = src_patches - src_mean
+        tgt_centered = tgt_patches - tgt_mean
+        covariance = (src_centered * tgt_centered).mean(dim=1)  # [B, H*W]
+        
+        # NCC
+        ncc = covariance / (src_std.squeeze(1) * tgt_std.squeeze(1))
+        ncc = torch.clamp(ncc, -1.0, 1.0)
+        ncc = torch.nan_to_num(ncc, nan=0.0)
+        
+        return ((1 - ncc) ** 2).mean() # range [0, 4]
 
     def data_dependent_initialize(self, data):
         """
         The feature network netF is defined in terms of the shape of the intermediate, extracted
         features of the encoder portion of netG. Because of this, the weights of netF are
         initialized at the first feedforward pass with some input images.
-        Please also see PatchSampleF.create_mlp(), which is called at the first forward() call.
         """
         import torch.distributed as dist
         
         self.set_input(data)
         
         with torch.no_grad():
-            self.forward()                     # compute fake images: G(A)
-            # Just need to compute losses to trigger MLP creation, no actual gradient updates needed
+            self.forward()
             if self.opt.isTrain:
                 _ = self.compute_D_loss()
                 _ = self.compute_G_loss()
         
-        # 关键：在 DDP 模式下，同步 netF 的参数，确保所有 rank 使用相同的初始化
+        # 🆕 如果是 continue_train，在 MLP 创建后再加载 checkpoint
+        if self.opt.isTrain and self.opt.continue_train:
+            print(f"\n{'='*70}")
+            print("Continue training: Loading checkpoint after MLP initialization...")
+            print(f"{'='*70}\n")
+            
+            load_suffix = self.opt.epoch
+            
+            # 只加载 netF（G和D已在setup中加载）
+            load_filename = '%s_net_F.pth' % load_suffix
+            load_path = os.path.join(self.save_dir, load_filename)
+            
+            if os.path.exists(load_path):
+                print(f'Loading netF from {load_path}')
+                state_dict = torch.load(load_path, map_location=str(self.device))
+                
+                # 处理 DDP 包装
+                net_f = self.netF
+                if isinstance(net_f, (torch.nn.DataParallel, torch.nn.parallel.DistributedDataParallel)):
+                    net_f = net_f.module
+                
+                # 现在 MLP 已创建，应该可以完全加载
+                missing_keys, unexpected_keys = net_f.load_state_dict(state_dict, strict=False)
+                
+                if missing_keys:
+                    print(f'  Warning: Missing keys: {missing_keys}')
+                if unexpected_keys:
+                    print(f'  Warning: Unexpected keys: {unexpected_keys}')
+                
+                print("✅ netF checkpoint loaded successfully after MLP initialization")
+            else:
+                print(f"Warning: netF checkpoint not found at {load_path}")
+        
+        # 在 DDP 模式下同步参数
         if dist.is_available() and dist.is_initialized():
-            # 从 rank 0 广播 netF 的参数到所有其他 rank
+            print("Synchronizing network parameters across ranks...")
             for param in [self.netF, self.netG, self.netD]:
                 for p in param.parameters():
                     dist.broadcast(p.data, src=0)
-            
-            
+            print("✅ Parameters synchronized")
         
         if self.opt.isTrain:
             if self.opt.lambda_NCE > 0.0:
                 self.optimizer_F = torch.optim.Adam(self.netF.parameters(), lr=self.opt.lr, betas=(self.opt.beta1, self.opt.beta2))
                 self.optimizers.append(self.optimizer_F)
+                
+                # 🆕 如果是 continue_train，也需要加载 optimizer 状态
+                if self.opt.continue_train:
+                    self._load_optimizer_state(load_suffix)
+
+    def _load_optimizer_state(self, epoch):
+        """加载优化器状态（可选）"""
+        try:
+            opt_f_path = os.path.join(self.save_dir, f'{epoch}_optimizer_F.pth')
+            if os.path.exists(opt_f_path):
+                print(f'Loading optimizer_F state from {opt_f_path}')
+                opt_state = torch.load(opt_f_path, map_location=str(self.device))
+                self.optimizer_F.load_state_dict(opt_state)
+                print("✅ optimizer_F state loaded")
+        except Exception as e:
+            print(f"Warning: Could not load optimizer_F state: {e}")
 
     def optimize_parameters(self):
         # forward
@@ -239,6 +492,49 @@ class CUTModel(BaseModel):
         self.optimizer_G.step()
         if self.opt.netF == 'mlp_sample':
             self.optimizer_F.step()
+            
+    def evaluate_epoch_end(self):
+        """
+        在每个epoch结束时调用，进行质量评估
+        这个函数应该在训练脚本中调用
+        """
+        with torch.no_grad():
+            # 使用一个batch进行评估（通常是最后一个batch）
+            if hasattr(self, 'real_A') and hasattr(self, 'fake_B'):
+                metrics = self.evaluate_quality(self.real_A, self.fake_B)
+                
+                print(f"\n{'='*60}")
+                print(f"[Quality Metrics - Epoch {self.current_epoch}]")
+                print(f"  SSIM:          {metrics['ssim']:.4f}")
+                print(f"  Edge Preserve: {metrics['edge_preserve']:.4f}")
+                print(f"  Sharpness:     {metrics['sharpness']:.4f}")
+                print(f"  Quality Score: {metrics['quality_score']:.4f}")
+                print(f"{'='*60}\n")
+                
+                # 保存历史记录
+                if not hasattr(self, '_quality_history'):
+                    self._quality_history = []
+                
+                metrics['epoch'] = self.current_epoch
+                self._quality_history.append(metrics)
+                
+                # 检测最佳点
+                if len(self._quality_history) >= 2:
+                    # 与之前所有epoch比较
+                    current_score = metrics['quality_score']
+                    previous_best = max([m['quality_score'] for m in self._quality_history[:-1]])
+                    
+                    if current_score > previous_best:
+                        improvement = current_score - previous_best
+                        print(f"  ✅ New best quality score! (Improved by {improvement:.4f})")
+                        self.save_networks('best_quality')
+                    
+                    # 检测过拟合趋势（最近3个epoch质量下降）
+                    if len(self._quality_history) >= 4:
+                        recent_scores = [m['quality_score'] for m in self._quality_history[-4:]]
+                        if all(recent_scores[i] > recent_scores[i+1] for i in range(3)):
+                            print(f"  ⚠️  Warning: Quality declining for 3 consecutive epochs!")
+                            print(f"  Consider early stopping or using checkpoint from epoch {self._quality_history[-4]['epoch']}")
 
     def set_input(self, input):
         """Unpack input data from the dataloader and perform necessary pre-processing steps.
@@ -270,15 +566,30 @@ class CUTModel(BaseModel):
     def compute_D_loss(self):
         """Calculate GAN loss for the discriminator"""
         fake = self.fake_B.detach()
-        # Fake; stop backprop to the generator by detaching fake_B
+        
+        # 前向传播
         pred_fake = self.netD(fake)
-        self.loss_D_fake = self.criterionGAN(pred_fake, False).mean()
-        # Real
-        self.pred_real = self.netD(self.real_B)
-        loss_D_real = self.criterionGAN(self.pred_real, True)
-        self.loss_D_real = loss_D_real.mean()
-
-        # combine loss and calculate gradients
+        pred_real = self.netD(self.real_B)
+        
+        # ⭐ 统一处理：如果不是 list，转换为 list
+        if not isinstance(pred_fake, list):
+            pred_fake = [pred_fake]
+            pred_real = [pred_real]
+        
+        # 对所有尺度计算 loss（单尺度时只有 1 个元素）
+        self.loss_D_fake = 0.0
+        self.loss_D_real = 0.0
+        
+        for pred_fake_i, pred_real_i in zip(pred_fake, pred_real):
+            self.loss_D_fake += self.criterionGAN(pred_fake_i, False).mean()
+            self.loss_D_real += self.criterionGAN(pred_real_i, True).mean()
+        
+        # 平均
+        num_scales = len(pred_fake)
+        self.loss_D_fake = self.loss_D_fake / num_scales
+        self.loss_D_real = self.loss_D_real / num_scales
+        
+        # 总 loss
         self.loss_D = (self.loss_D_fake + self.loss_D_real) * 0.5
         return self.loss_D
 
@@ -288,7 +599,19 @@ class CUTModel(BaseModel):
         # First, G(A) should fake the discriminator
         if self.opt.lambda_GAN > 0.0:
             pred_fake = self.netD(fake)
-            self.loss_G_GAN = self.criterionGAN(pred_fake, True).mean() * self.opt.lambda_GAN
+            
+            # 统一处理：如果不是 list，转换为 list
+            if not isinstance(pred_fake, list):
+                pred_fake = [pred_fake]
+            
+            # 对所有尺度计算 loss
+            self.loss_G_GAN = 0.0
+            for pred_fake_i in pred_fake:
+                self.loss_G_GAN += self.criterionGAN(pred_fake_i, True).mean()
+            
+            # 平均并乘以权重
+            num_scales = len(pred_fake)
+            self.loss_G_GAN = (self.loss_G_GAN / num_scales) * self.opt.lambda_GAN
         else:
             self.loss_G_GAN = 0.0
 
@@ -310,10 +633,26 @@ class CUTModel(BaseModel):
 
         if self.opt.lambda_canny > 0:
             self.loss_Canny = self.compute_canny_loss(self.real_A, self.fake_B) * self.opt.lambda_canny
-                    
-        self.loss_Idt = self.criterionIdt(self.real_B, self.idt_B)
-
-        self.loss_G = self.loss_G_GAN + loss_NCE_both + self.loss_SSIM + self.loss_Canny
+        
+        self.loss_Idt = 0.0
+        if self.opt.nce_idt and self.opt.lambda_NCE > 0.0:
+            self.loss_Idt = self.criterionIdt(self.real_B, self.idt_B) # not used now
+        
+        
+        self.loss_Elastic = 0.0
+        if self.opt.lambda_elastic > 0:
+            self.loss_Elastic = self.compute_adaptive_elastic_loss(self.real_A, self.fake_B) * self.opt.lambda_elastic
+        
+        self.loss_Perceptual = 0.0
+        if self.opt.lambda_perceptual > 0:
+            self.loss_Perceptual = self.compute_perceptual_loss(self.real_A, self.fake_B) * self.opt.lambda_perceptual
+        # total generator loss
+        self.loss_G = (self.loss_G_GAN + 
+                   loss_NCE_both + 
+                   self.loss_SSIM + 
+                   self.loss_Canny + 
+                   self.loss_Elastic +
+                     self.loss_Perceptual)
         return self.loss_G
 
     def calculate_NCE_loss(self, src, tgt):

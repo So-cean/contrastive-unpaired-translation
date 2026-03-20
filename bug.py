@@ -7,37 +7,121 @@ from models.networks import Upsample, Downsample
 # print(state_dict.keys())
 
 
-class ConvNeXtBlock(nn.Module):
-    """
-    ConvNeXt Block: 内部使用 nn.LayerNorm
-    """
-    def __init__(self, dim, drop_path=0., layer_scale_init_value=1e-6, kernel_size=7):
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import numpy as np
+
+def get_filter(filt_size=3):
+    if(filt_size == 1):
+        a = np.array([1., ])
+    elif(filt_size == 2):
+        a = np.array([1., 1.])
+    elif(filt_size == 3):
+        a = np.array([1., 2., 1.])
+    elif(filt_size == 4):
+        a = np.array([1., 3., 3., 1.])
+    elif(filt_size == 5):
+        a = np.array([1., 4., 6., 4., 1.])
+    elif(filt_size == 6):
+        a = np.array([1., 5., 10., 10., 5., 1.])
+    elif(filt_size == 7):
+        a = np.array([1., 6., 15., 20., 15., 6., 1.])
+
+    filt = torch.Tensor(a[:, None] * a[None, :])
+    filt = filt / torch.sum(filt)
+
+    return filt
+
+def get_pad_layer(pad_type):
+    if(pad_type in ['refl', 'reflect']):
+        PadLayer = nn.ReflectionPad2d
+    elif(pad_type in ['repl', 'replicate']):
+        PadLayer = nn.ReplicationPad2d
+    elif(pad_type == 'zero'):
+        PadLayer = nn.ZeroPad2d
+    else:
+        print('Pad type [%s] not recognized' % pad_type)
+    return PadLayer
+
+class Downsample(nn.Module):
+    def __init__(self, channels, pad_type='reflect', filt_size=3, stride=2, pad_off=0):
+        super(Downsample, self).__init__()
+        self.filt_size = filt_size
+        self.pad_off = pad_off
+        self.pad_sizes = [int(1. * (filt_size - 1) / 2), int(np.ceil(1. * (filt_size - 1) / 2)), int(1. * (filt_size - 1) / 2), int(np.ceil(1. * (filt_size - 1) / 2))]
+        self.pad_sizes = [pad_size + pad_off for pad_size in self.pad_sizes]
+        self.stride = stride
+        self.off = int((self.stride - 1) / 2.)
+        self.channels = channels
+
+        filt = get_filter(filt_size=self.filt_size)
+        self.register_buffer('filt', filt[None, None, :, :].repeat((self.channels, 1, 1, 1)), persistent=False)
+
+        self.pad = get_pad_layer(pad_type)(self.pad_sizes)
+
+    def forward(self, inp):
+        if(self.filt_size == 1):
+            if(self.pad_off == 0):
+                return inp[:, :, ::self.stride, ::self.stride]
+            else:
+                return self.pad(inp)[:, :, ::self.stride, ::self.stride]
+        else:
+            # 使用 .clone().detach() 创建独立副本，避免梯度版本冲突
+            return F.conv2d(self.pad(inp), self.filt.clone().detach(), stride=self.stride, groups=inp.shape[1])
+
+class Upsample(nn.Module):
+    def __init__(self, channels, stride=2, mode='bilinear', **kwargs):
         super().__init__()
-        self.dwconv = nn.Conv2d(dim, dim, kernel_size=kernel_size, 
-                               padding=kernel_size//2, groups=dim)
-        self.norm = nn.LayerNorm(dim, eps=1e-6)
-        self.pwconv1 = nn.Linear(dim, 4 * dim)
-        self.act = nn.GELU()
-        self.pwconv2 = nn.Linear(4 * dim, dim)
-        self.gamma = nn.Parameter(layer_scale_init_value * torch.ones(dim), 
-                                  requires_grad=True) if layer_scale_init_value > 0 else None
-        self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
+        self.scale_factor = stride
+        self.mode = mode
+        
+    def forward(self, x):
+        return F.interpolate(x, scale_factor=self.scale_factor, 
+                           mode=self.mode, align_corners=False)  
+
+class LayerNorm(nn.Module):
+    """
+    支持两种数据格式的 LayerNorm
+    channels_last: (B, H, W, C)
+    channels_first: (B, C, H, W)
+    """
+    def __init__(self, normalized_shape, eps=1e-6, data_format="channels_last"):
+        super().__init__()
+        self.weight = nn.Parameter(torch.ones(normalized_shape))
+        self.bias = nn.Parameter(torch.zeros(normalized_shape))
+        self.eps = eps
+        self.data_format = data_format
+        if self.data_format not in ["channels_last", "channels_first"]:
+            raise NotImplementedError
+        self.normalized_shape = (normalized_shape,)
+    
+    def forward(self, x):
+        if self.data_format == "channels_last":
+            return F.layer_norm(x, self.normalized_shape, self.weight, self.bias, self.eps)
+        elif self.data_format == "channels_first":
+            u = x.mean(1, keepdim=True)
+            s = (x - u).pow(2).mean(1, keepdim=True)
+            x = (x - u) / torch.sqrt(s + self.eps)
+            x = self.weight[:, None, None] * x + self.bias[:, None, None]
+            return x
+
+class GRN(nn.Module):
+    """Global Response Normalization (ConvNeXt V2)"""
+    def __init__(self, dim, eps=1e-6):
+        super().__init__()
+        self.eps = eps
+        self.gamma = nn.Parameter(torch.zeros(1, 1, 1, dim))
+        self.beta = nn.Parameter(torch.zeros(1, 1, 1, dim))
 
     def forward(self, x):
-        input = x
-        x = self.dwconv(x)
-        x = x.permute(0, 2, 3, 1).contiguous()
-        x = self.norm(x)
-        x = self.pwconv1(x)
-        x = self.act(x)
-        x = self.pwconv2(x)
-        if self.gamma is not None:
-            x = self.gamma * x
-        x = x.permute(0, 3, 1, 2).contiguous()
-        x = input + self.drop_path(x)
-        return x
+        # x: [N, H, W, C]
+        Gx = torch.norm(x, p=2, dim=(1, 2), keepdim=True)  # [N, 1, 1, C]
+        Nx = Gx / (Gx.mean(dim=-1, keepdim=True) + self.eps)
+        return self.gamma * (x * Nx) + self.beta + x
 
 class DropPath(nn.Module):
+    """Stochastic Depth"""
     def __init__(self, drop_prob=0.):
         super().__init__()
         self.drop_prob = drop_prob
@@ -50,92 +134,156 @@ class DropPath(nn.Module):
         random_tensor = keep_prob + torch.rand(shape, dtype=x.dtype, device=x.device)
         random_tensor.floor_()
         return x.div(keep_prob) * random_tensor
+    
+class ConvNeXtV2Block(nn.Module):
+    """ConvNeXt V2 Block"""
+    def __init__(self, dim, drop_path=0., kernel_size=7):
+        super().__init__()
+        self.dwconv = nn.Conv2d(dim, dim, kernel_size=kernel_size,
+                               padding=kernel_size//2, groups=dim)
+        self.norm = LayerNorm(dim, eps=1e-6, data_format="channels_last")
+        self.pwconv1 = nn.Linear(dim, 4 * dim)
+        self.act = nn.GELU()
+        self.grn = GRN(4 * dim)
+        self.pwconv2 = nn.Linear(4 * dim, dim)
+        self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
 
-class ConvNeXtGenerator(nn.Module):
+    def forward(self, x):
+        input = x
+        x = self.dwconv(x)
+        x = x.permute(0, 2, 3, 1).contiguous()
+        x = self.norm(x)
+        x = self.pwconv1(x)
+        x = self.act(x)
+        x = self.grn(x)
+        x = self.pwconv2(x)
+        x = x.permute(0, 3, 1, 2).contiguous()
+        x = input + self.drop_path(x)
+        return x
+
+class ConvNeXtV2Generator(nn.Module):
     """
-    ConvNeXt Generator - 标准 Sequential 风格，类似 ResnetGenerator
-    先用标准 Upsample 调试，确认无误后再换 Converse2D
+    ConvNeXt V2 生成器 - 完整修正版
+    基于 CUT/CycleGAN 架构，使用 ConvNeXt V2 Block 替代 ResNet Block
+    
+    特点：
+    1. 使用官方正确的 GRN 实现，增强通道间特征竞争
+    2. 使用抗锯齿下采样（blur pooling）保持平移等变性
+    3. 使用双线性插值上采样，避免棋盘效应
+    4. 支持随机深度（Drop Path）正则化
+    5. 完全兼容 CUT/CycleGAN 的 NCHW 格式和多层特征提取接口
     """
-    def __init__(self, input_nc, output_nc, ngf=64, norm_layer=None, 
-                 use_dropout=False, n_blocks=6, padding_type='reflect', 
+    def __init__(self, input_nc, output_nc, ngf=64, norm_layer=None,
+                 use_dropout=False, n_blocks=6, padding_type='reflect',
                  no_antialias=False, no_antialias_up=False, opt=None,
-                 convnext_kernel_size=7,      
-                 drop_path_rate=0.1):
+                 convnext_kernel_size=7, drop_path_rate=0.1):
         
-        super(ConvNeXtGenerator, self).__init__()
+        super(ConvNeXtV2Generator, self).__init__()
         self.opt = opt
         self.n_blocks = n_blocks
         
-        # 构建模型列表（ResnetGenerator 风格）
+        # 构建模型
         model = []
         
-        # --- 入口 ---
+        # --- 输入层：7x7 卷积，保持分辨率 ---
         model += [nn.ReflectionPad2d(3),
-                  nn.Conv2d(input_nc, ngf, kernel_size=7, padding=0),
-                  nn.GroupNorm(1, ngf, eps=1e-6),
-                  nn.GELU()]
+                 nn.Conv2d(input_nc, ngf, kernel_size=7, padding=0),
+                 LayerNorm(ngf, eps=1e-6, data_format="channels_first"),
+                 nn.GELU()]
 
         n_downsampling = 2
         
-        # --- 下采样 ---
+        # --- 下采样层：2 次，每次分辨率减半，通道数翻倍 ---
         for i in range(n_downsampling):
             mult = 2 ** i
             in_ch = ngf * mult
             out_ch = ngf * mult * 2
             
             if no_antialias:
-                model += [nn.Conv2d(in_ch, out_ch, 3, stride=2, padding=1),
-                          nn.GroupNorm(1, out_ch, eps=1e-6),
-                          nn.GELU()]
+                # 普通下采样（简单但可能有混叠）
+                model += [nn.Conv2d(in_ch, out_ch, kernel_size=3, stride=2, padding=1, bias=False),
+                         LayerNorm(out_ch, eps=1e-6, data_format="channels_first"),
+                         nn.GELU()]
             else:
-                model += [nn.Conv2d(in_ch, out_ch, 3, stride=1, padding=1),
-                          nn.GroupNorm(1, out_ch, eps=1e-6),
-                          nn.GELU(),
-                          Downsample(out_ch)]  # 你原来的 Downsample
+                # 抗锯齿下采样：先卷积后模糊降采样（推荐，更平滑）
+                model += [nn.Conv2d(in_ch, out_ch, kernel_size=3, stride=1, padding=1, bias=False),
+                         LayerNorm(out_ch, eps=1e-6, data_format="channels_first"),
+                         nn.GELU(),
+                         Downsample(out_ch)]
 
-        # --- ConvNeXt Blocks (核心) ---
+        # --- ConvNeXt V2 Blocks：核心特征提取 ---
         mult = 2 ** n_downsampling
+        # 线性增加 drop path 率（从 0 到 drop_path_rate）
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, n_blocks)]
         
         for i in range(n_blocks):
-            model += [ConvNeXtBlock(ngf * mult, 
-                                   drop_path=dpr[i],
-                                   kernel_size=convnext_kernel_size)]
+            model += [ConvNeXtV2Block(ngf * mult,
+                                    drop_path=dpr[i],
+                                    kernel_size=convnext_kernel_size)]
 
-        # --- 上采样 (标准版，用于 debug) ---
+        # --- 上采样层：2 次，每次分辨率翻倍，通道数减半 ---
         for i in range(n_downsampling):
             mult = 2 ** (n_downsampling - i)
             in_ch = ngf * mult
             out_ch = int(ngf * mult / 2)
             
             if no_antialias_up:
-                # 标准 ConvTranspose
-                model += [nn.ConvTranspose2d(in_ch, out_ch, 3, stride=2, 
-                                            padding=1, output_padding=1),
-                          nn.GroupNorm(1, out_ch, eps=1e-6),
-                          nn.GELU()]
+                # 转置卷积上采样（可能有棋盘效应）
+                model += [nn.ConvTranspose2d(in_ch, out_ch, kernel_size=3, stride=2,
+                                            padding=1, output_padding=1, bias=False),
+                         LayerNorm(out_ch, eps=1e-6, data_format="channels_first"),
+                         nn.GELU()]
             else:
-                # 标准抗锯齿上采样（使用你原来的 Upsample 类）
-                model += [Upsample(in_ch),  # 你原来的 Upsample（非 Converse）
-                          nn.Conv2d(in_ch, out_ch, 3, padding=1),
-                          nn.GroupNorm(1, out_ch, eps=1e-6),
-                          nn.GELU()]
+                # 插值上采样 + 卷积（推荐，更平滑）
+                model += [Upsample(in_ch, stride=2, mode='bilinear'),
+                         nn.Conv2d(in_ch, out_ch, kernel_size=3, padding=1, bias=False),
+                         LayerNorm(out_ch, eps=1e-6, data_format="channels_first"),
+                         nn.GELU()]
 
-        # --- 出口 ---
+        # --- 输出层：7x7 卷积，生成最终图像 ---
         model += [nn.ReflectionPad2d(3),
-                  nn.Conv2d(ngf, output_nc, kernel_size=7, padding=0),
-                  nn.Tanh()]
+                 nn.Conv2d(ngf, output_nc, kernel_size=7, padding=0),
+                 nn.Tanh()]  # 输出范围 [-1, 1]
 
         self.model = nn.Sequential(*model)
         
-        # 打印调试信息
+        # 初始化权重
+        self.apply(self._init_weights)
+        
+        # 打印模型信息
         n_params = sum(p.numel() for p in self.parameters()) / 1e6
-        print(f"[ConvNeXtGenerator] n_blocks={n_blocks}, "
-              f"kernel={convnext_kernel_size}, params={n_params:.2f}M")
+        print(f"[ConvNeXtV2Generator] n_blocks={n_blocks}, "
+              f"kernel={convnext_kernel_size}, drop_path={drop_path_rate:.3f}, "
+              f"params={n_params:.2f}M, antialias_down={not no_antialias}, "
+              f"antialias_up={not no_antialias_up}")
+
+    def _init_weights(self, m):
+        """
+        ConvNeXt V2 风格的权重初始化
+        使用截断正态分布，标准差 0.02
+        """
+        if isinstance(m, (nn.Conv2d, nn.Linear)):
+            nn.init.trunc_normal_(m.weight, std=0.02)
+            if m.bias is not None:
+                nn.init.constant_(m.bias, 0)
+        elif isinstance(m, LayerNorm):
+            nn.init.constant_(m.weight, 1.0)
+            nn.init.constant_(m.bias, 0)
+        # GRN 的 gamma 和 beta 已经在 __init__ 中初始化为 0，不需要额外处理
 
     def forward(self, input, layers=[], encode_only=False):
         """
-        完全兼容 CUT 的多层特征提取接口
+        前向传播，完全兼容 CUT 的多层特征提取接口
+        
+        Args:
+            input: 输入图像 [B, C, H, W] (NCHW 格式，CycleGAN 标准)
+            layers: 需要提取特征的层索引列表
+            encode_only: 是否只返回特征（用于 PatchNCE 损失）
+        
+        Returns:
+            如果 layers 为空：返回生成图像 [B, C, H, W]
+            如果 encode_only=True：返回特征列表 [feat1, feat2, ...]
+            否则：返回 (生成图像, 特征列表)
         """
         if -1 in layers:
             layers.append(len(self.model))
@@ -152,6 +300,7 @@ class ConvNeXtGenerator(nn.Module):
             return feat, feats
         else:
             return self.model(input)
+        
         
     def print_layer_info(self, input_shape=(1, 3, 256, 256), nce_layers=None):
         """
@@ -231,8 +380,8 @@ class ConvNeXtGenerator(nn.Module):
 opt = type('', (), {})()  # 创建一个空对象模拟 opt
 opt.input_nc = 1
 opt.crop_size = 256
-opt.nce_layers = '1,8,12,16,20'       
-netG = ConvNeXtGenerator(input_nc=opt.input_nc, output_nc=1, ngf=94, n_blocks=9,
+opt.nce_layers = '1,8,14,23,30,35'       
+netG = ConvNeXtV2Generator(input_nc=opt.input_nc, output_nc=1, ngf=94, n_blocks=24,
                         no_antialias=False, no_antialias_up=False)
 
 
@@ -467,8 +616,8 @@ class ResnetBlock(nn.Module):
         out = x + self.conv_block(x)  # add skip connections
         return out
     
-netG_resnet = ResnetGenerator(input_nc=opt.input_nc, output_nc=1, ngf=94, n_blocks=9,
+netG_resnet = ResnetGenerator(input_nc=opt.input_nc, output_nc=1, ngf=64, n_blocks=6,
                         no_antialias=False, no_antialias_up=False)
-nce_layers_resnet = [0,4,8,12,16]
+nce_layers_resnet = [0,4,8,12,17]
 netG_resnet.print_layer_info(input_shape=(1, opt.input_nc, opt.crop_size, opt.crop_size), 
                       nce_layers=nce_layers_resnet)

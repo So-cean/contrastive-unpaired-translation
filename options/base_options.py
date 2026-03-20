@@ -34,8 +34,10 @@ class BaseOptions():
         parser.add_argument('--output_nc', type=int, default=3, help='# of output image channels: 3 for RGB and 1 for grayscale')
         parser.add_argument('--ngf', type=int, default=64, help='# of gen filters in the last conv layer')
         parser.add_argument('--ndf', type=int, default=64, help='# of discrim filters in the first conv layer')
-        parser.add_argument('--netD', type=str, default='basic', choices=['basic', 'n_layers', 'pixel', 'patch', 'tilestylegan2', 'stylegan2'], help='specify discriminator architecture. The basic model is a 70x70 PatchGAN. n_layers allows you to specify the layers in the discriminator')
-        parser.add_argument('--netG', type=str, default='resnet_9blocks', choices=['resnet_9blocks', 'resnet_6blocks', 'unet_256', 'unet_128', 'stylegan2', 'smallstylegan2', 'resnet_cat', 'convnext_9blocks', 'convnext_24blocks', 'convnextv2_9blocks', 'convnextv2_24blocks'], help='specify generator architecture')
+        parser.add_argument('--netD', type=str, default='basic', choices=['basic', 'n_layers', 'pixel', 'patch', 'tilestylegan2', 'stylegan2', 'multiscale'], help='specify discriminator architecture. The basic model is a 70x70 PatchGAN. n_layers allows you to specify the layers in the discriminator')
+        parser.add_argument('--num_D', type=int, default=2, 
+                   help='number of discriminators for multiscale (only for monai_multiscale)')
+        parser.add_argument('--netG', type=str, default='resnet_9blocks', choices=['resnet_9blocks', 'resnet_6blocks', 'unet_6downs', 'unet_7downs', 'unet_8downs', 'stylegan2', 'smallstylegan2', 'resnet_cat', 'convnext_9blocks', 'convnext_24blocks', 'convnextv2_9blocks', 'convnextv2_24blocks'], help='specify generator architecture')
         parser.add_argument('--n_layers_D', type=int, default=3, help='only used if netD==n_layers')
         parser.add_argument('--normG', type=str, default='instance', choices=['instance', 'batch', 'none'], help='instance normalization or batch normalization for G')
         parser.add_argument('--normD', type=str, default='instance', choices=['instance', 'batch', 'none'], help='instance normalization or batch normalization for D')
@@ -69,6 +71,7 @@ class BaseOptions():
                             default=1, type=int,
                             help='Number of downsampling layers used by StyleGAN2Generator')
 
+        parser.add_argument('--epoch_count', type=int, default=1, help='the starting epoch count, we save the model by <epoch_count>, <epoch_count>+<save_latest_freq>, ...')
         self.initialized = True
         return parser
 
@@ -138,8 +141,32 @@ class BaseOptions():
             print("permission error {}".format(error))
             pass
 
+    # def parse(self):
+    #     """Parse our options, create checkpoints directory suffix, and set up gpu device."""
+    #     opt = self.gather_options()
+    #     opt.isTrain = self.isTrain   # train or test
+
+    #     # process opt.suffix
+    #     if opt.suffix:
+    #         suffix = ('_' + opt.suffix.format(**vars(opt))) if opt.suffix != '' else ''
+    #         opt.name = opt.name + suffix
+
+    #     self.print_options(opt)
+
+    #     # set gpu ids
+    #     str_ids = opt.gpu_ids.split(',')
+    #     opt.gpu_ids = []
+    #     for str_id in str_ids:
+    #         id = int(str_id)
+    #         if id >= 0:
+    #             opt.gpu_ids.append(id)
+    #     if len(opt.gpu_ids) > 0:
+    #         torch.cuda.set_device(opt.gpu_ids[0])
+
+    #     self.opt = opt
+    #     return self.opt
     def parse(self):
-        """Parse our options, create checkpoints directory suffix, and set up gpu device."""
+        """Parse our options, create checkpoints directory suffix, and set up device (GPU or CPU)."""
         opt = self.gather_options()
         opt.isTrain = self.isTrain   # train or test
 
@@ -150,15 +177,29 @@ class BaseOptions():
 
         self.print_options(opt)
 
-        # set gpu ids
+        # set device (GPU or CPU)
         str_ids = opt.gpu_ids.split(',')
         opt.gpu_ids = []
-        for str_id in str_ids:
-            id = int(str_id)
-            if id >= 0:
-                opt.gpu_ids.append(id)
-        if len(opt.gpu_ids) > 0:
-            torch.cuda.set_device(opt.gpu_ids[0])
-
+        
+        # 检查是否有可用的GPU[3,8](@ref)
+        if torch.cuda.is_available():
+            for str_id in str_ids:
+                id = int(str_id)
+                if id >= 0:
+                    opt.gpu_ids.append(id)
+            
+            # 如果有有效的GPU ID，使用第一个GPU[1,4](@ref)
+            if len(opt.gpu_ids) > 0:
+                torch.cuda.set_device(opt.gpu_ids[0])
+                opt.device = torch.device(f'cuda:{opt.gpu_ids[0]}')
+            else:
+                # 如果没有指定有效的GPU，使用CPU[7,8](@ref)
+                opt.device = torch.device('cpu')
+        else:
+            # 如果CUDA不可用，强制使用CPU[1,7](@ref)
+            opt.device = torch.device('cpu')
+            opt.gpu_ids = []  # 清空GPU IDs，因为不可用
+        
+        
         self.opt = opt
         return self.opt

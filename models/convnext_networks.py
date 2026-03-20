@@ -205,7 +205,7 @@ class ConvNeXtGenerator(nn.Module):
             
             if no_antialias:
                 model += [nn.Conv2d(in_ch, out_ch, 3, stride=2, padding=1),
-                          LayerNorm(in_ch, eps=1e-6, data_format="channels_first"),
+                          LayerNorm(out_ch, eps=1e-6, data_format="channels_first"),
                           nn.GELU()]
             else:
                 model += [nn.Conv2d(in_ch, out_ch, 3, stride=1, padding=1),

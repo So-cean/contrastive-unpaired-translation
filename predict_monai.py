@@ -19,7 +19,10 @@ if shutil.which("npu-smi") and importlib.util.find_spec("torch_npu") is not None
     torch.npu.config.allow_internal_format = False
     os.environ['HCCL_EXEC_TIMEOUT'] = '120'  
     os.environ['HCCL_CONNECT_TIMEOUT'] = '120'
-    
+
+import lightning as pl
+pl.seed_everything(42, workers=True)
+
 def count_nii_files(dataroot, phase, direction):
     # 根据 direction 选择主域
     if direction == 'AtoB':

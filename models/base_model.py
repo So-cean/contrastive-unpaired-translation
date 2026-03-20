@@ -42,6 +42,7 @@ class BaseModel(ABC):
         self.optimizers = []
         self.image_paths = []
         self.metric = 0  # used for learning rate policy 'plateau'
+        self.current_epoch = opt.epoch_count
 
     @staticmethod
     def dict_grad_hook_factory(add_func=lambda x: x):
@@ -95,9 +96,11 @@ class BaseModel(ABC):
         if self.isTrain:
             if not hasattr(self, 'schedulers'):  # ← ADD THIS CHECK
                 self.schedulers = [networks.get_scheduler(optimizer, opt) for optimizer in self.optimizers]
-        if not self.isTrain or opt.continue_train:
-            load_suffix = opt.epoch
-            self.load_networks(load_suffix)
+        # 🔧 只在非训练模式，或者训练模式但不是continue_train时加载
+        if not self.isTrain or (self.isTrain and not opt.continue_train):
+            if not self.isTrain or opt.continue_train:  # 原始条件
+                load_suffix = opt.epoch
+                self.load_networks(load_suffix)
 
         self.print_networks(opt.verbose)
 
@@ -254,11 +257,7 @@ class BaseModel(ABC):
             self.__patch_instance_norm_state_dict(state_dict, getattr(module, key), keys, i + 1)
 
     def load_networks(self, epoch):
-        """Load all the networks from the disk.
-
-        Parameters:
-            epoch (int) -- current epoch; used in the file name '%s_net_%s.pth' % (epoch, name)
-        """
+        """Load all the networks from the disk."""
         for name in self.model_names:
             if isinstance(name, str):
                 load_filename = '%s_net_%s.pth' % (epoch, name)
@@ -269,19 +268,25 @@ class BaseModel(ABC):
 
                 load_path = os.path.join(load_dir, load_filename)
                 net = getattr(self, 'net' + name)
-                if isinstance(net, torch.nn.DataParallel):
+                
+                # 处理 DDP/DataParallel 包装
+                if isinstance(net, (torch.nn.DataParallel, torch.nn.parallel.DistributedDataParallel)):
                     net = net.module
+                
                 print('loading the model from %s' % load_path)
-                # if you are using PyTorch newer than 0.4 (e.g., built from
-                # GitHub source), you can remove str() on self.device
                 state_dict = torch.load(load_path, map_location=str(self.device))
+                
                 if hasattr(state_dict, '_metadata'):
                     del state_dict._metadata
 
-                # patch InstanceNorm checkpoints prior to 0.4
-                # for key in list(state_dict.keys()):  # need to copy keys here because we mutate in loop
-                #    self.__patch_instance_norm_state_dict(state_dict, net, key.split('.'))
-                net.load_state_dict(state_dict)
+                # 🆕 使用 strict=False 允许部分加载（对于动态创建的网络）
+                missing_keys, unexpected_keys = net.load_state_dict(state_dict, strict=False)
+                
+                # 🆕 打印警告信息
+                if missing_keys:
+                    print(f'  Warning: Missing keys in net{name}: {missing_keys[:5]}...' if len(missing_keys) > 5 else f'  Warning: Missing keys in net{name}: {missing_keys}')
+                if unexpected_keys:
+                    print(f'  Warning: Unexpected keys in net{name}: {unexpected_keys[:5]}...' if len(unexpected_keys) > 5 else f'  Warning: Unexpected keys in net{name}: {unexpected_keys}')
 
     def print_networks(self, verbose):
         """Print the total number of parameters in the network and (if verbose) network architecture

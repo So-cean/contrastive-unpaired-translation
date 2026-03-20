@@ -193,7 +193,7 @@ class ConvNeXtV2Generator(nn.Module):
             if no_antialias:
                 # 普通下采样（简单但可能有混叠）
                 model += [nn.Conv2d(in_ch, out_ch, kernel_size=3, stride=2, padding=1, bias=False),
-                         LayerNorm(in_ch, eps=1e-6, data_format="channels_first"),
+                         LayerNorm(out_ch, eps=1e-6, data_format="channels_first"),
                          nn.GELU()]
             else:
                 # 抗锯齿下采样：先卷积后模糊降采样（推荐，更平滑）
@@ -292,60 +292,3 @@ class ConvNeXtV2Generator(nn.Module):
         else:
             return self.model(input)
         
-# ============= 测试代码 =============
-if __name__ == "__main__":
-    print("=" * 60)
-    print("ConvNeXt V2 Generator 测试")
-    print("=" * 60)
-    
-    # 创建模型
-    model = ConvNeXtV2Generator(
-        input_nc=3,
-        output_nc=3,
-        ngf=64,
-        n_blocks=9,
-        no_antialias=False,
-        no_antialias_up=False,
-        drop_path_rate=0.1
-    )
-    
-    # 测试输入 (CycleGAN 标准格式)
-    x = torch.randn(2, 3, 256, 256)  # [Batch, Channels, Height, Width]
-    print(f"\n输入形状: {x.shape}")
-    
-    # 测试前向传播
-    with torch.no_grad():
-        # 1. 基本生成
-        output = model(x)
-        print(f"输出形状: {output.shape}")
-        assert output.shape == x.shape, "输���形状应与输入相同"
-        
-        # 2. 多层特征提取（CUT 模式）
-        output, feats = model(x, layers=[4, 8, 12, 16])
-        print(f"\n多层特征提取:")
-        print(f"  输出形状: {output.shape}")
-        for i, feat in enumerate(feats):
-            print(f"  特征 {i} 形状: {feat.shape}")
-        
-        # 3. 仅编码（encode_only 模式）
-        feats_only = model(x, layers=[4, 8, 12], encode_only=True)
-        print(f"\n仅编码模式:")
-        for i, feat in enumerate(feats_only):
-            print(f"  特征 {i} 形状: {feat.shape}")
-    
-    print("\n" + "=" * 60)
-    print("✅ 所有测试通过！模型与 CycleGAN/CUT 完全兼容")
-    print("=" * 60)
-    
-    # 测试 GRN 单独工作
-    print("\n" + "=" * 60)
-    print("GRN 单元测试")
-    print("=" * 60)
-    grn = GRN(dim=256)
-    x_nhwc = torch.randn(4, 32, 32, 256)  # [N, H, W, C]
-    with torch.no_grad():
-        out = grn(x_nhwc)
-    print(f"GRN 输入: {x_nhwc.shape}")
-    print(f"GRN 输出: {out.shape}")
-    assert out.shape == x_nhwc.shape
-    print("✅ GRN 测试通过")

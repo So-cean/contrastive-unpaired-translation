@@ -1,16 +1,15 @@
 import os
+import re
 import sys
 import random
 import glob
 import numpy as np
-import nibabel as nib
 import torch
-from collections import OrderedDict
-import torch.distributed as dist
 
 # Add the project root to Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import data
 from data.base_dataset import BaseDataset
 
 
@@ -23,6 +22,8 @@ class MonaiDataset(BaseDataset):
     This dataset class loads 3D MRI NIfTI files and returns 2D slices for CycleGAN training.
     
     It requires two directories to host training volumes:
+    - trainA: thick slice data (厚层数据)
+    - trainB: thin slice data (薄层数据) 
     Each directory should contain .nii.gz files.
     
     For each 3D volume, the dataset randomly selects a 2D slice for training.
@@ -44,8 +45,8 @@ class MonaiDataset(BaseDataset):
         """
         BaseDataset.__init__(self, opt)
             
-        self.dir_A = os.path.join(opt.dataroot, opt.phase + "A")  
-        self.dir_B = os.path.join(opt.dataroot, opt.phase + "B")  
+        self.dir_A = os.path.join(opt.dataroot, opt.phase + "A")  # thick slice data
+        self.dir_B = os.path.join(opt.dataroot, opt.phase + "B")  # thin slice data
 
         # Load NIfTI file paths
         self.A_paths = sorted(glob.glob(os.path.join(self.dir_A, "*.nii.gz")))
@@ -78,7 +79,7 @@ class MonaiDataset(BaseDataset):
         pixel_dim_opt = getattr(opt, 'pixel_dim')
         pixel_dim = tuple(float(x) for x in pixel_dim_opt)
 
-        print(f"Using pixel_dim (for Spacingd): {pixel_dim}")
+        # print(f"Using pixel_dim (for Spacingd): {pixel_dim}")
 
         # Setup MONAI transforms - unified processing for both volume loading and slice processing
         
@@ -86,7 +87,7 @@ class MonaiDataset(BaseDataset):
             monai_transforms.LoadImaged(keys=["image"]),
             monai_transforms.EnsureChannelFirstd(keys=["image"]),
             monai_transforms.EnsureTyped(keys=["image"], dtype=torch.float32),
-            monai_transforms.Orientationd(keys=["image"], axcodes="RAS"),
+            monai_transforms.Orientationd(keys=["image"], axcodes="RAS", labels=(('L', 'R'), ('P', 'A'), ('I', 'S'))),
             monai_transforms.Spacingd(keys=["image"], pixdim=pixel_dim, mode=("bilinear")),
             monai_transforms.CenterSpatialCropd(keys=["image"], roi_size=(256, 256, -1)),
             monai_transforms.SpatialPadd(keys=["image"], spatial_size=(256, 256, -1), mode="constant", constant_values=0),
@@ -109,26 +110,25 @@ class MonaiDataset(BaseDataset):
         
         # Calculate total valid slices for each domain
         self._calculate_valid_slices(domain='A')
-        self._calculate_valid_slices(domain='B')        
+        self._calculate_valid_slices(domain='B')
         
-        self.epoch_A_indices = None
-        
+        # Initialize epoch counter for reproducible random sampling
+        self.current_epoch = 0
+
     def set_epoch(self, epoch):
-        """每个 epoch 重新随机配对，确保 A 和 B 都不重复"""
+        """
+        Set current epoch for reproducible random sampling across epochs.
+        Call this method at the beginning of each epoch in your training loop.
+        
+        Parameters:
+            epoch (int) -- current epoch number
+        """
         self.current_epoch = epoch
-    
-        g = torch.Generator()
-        g.manual_seed(epoch)
-    
-        # A 多：随机选 num_B 个不重复的 A
-        self.epoch_A_indices = torch.randperm(
-            self.num_A_slices, generator=g
-        )[:self.num_B_slices].tolist()
-            
+
     def _calculate_valid_slices(self, domain:str='A'):
         """Calculate the total number of valid slices for each domain."""
         data_domain = getattr(self, f"data_{domain}")        
-        min_nonzero_pixels = 100  # Minimum number of non-zero pixels to consider a slice valid
+        min_nonzero_pixels = 1000  # Minimum number of non-zero pixels to consider a slice valid
         slice_list = []
         slices_per_volume = {i: [] for i in range(len(data_domain))}
         
@@ -171,18 +171,31 @@ class MonaiDataset(BaseDataset):
             index (int) -- a random integer for data indexing
 
         Returns a dictionary that contains A, B, A_paths and B_paths
-            A (tensor) -- an image slice from domain A  (output_channels, 256, 256)
-            B (tensor) -- an image slice from domain B  (output_channels, 256, 256)
+            A (tensor) -- an image slice from domain A (thick slices) (output_channels, 256, 256)
+            B (tensor) -- an image slice from domain B (thin slices) (output_channels, 256, 256)
             A_paths (str) -- NIfTI file paths
             B_paths (str) -- NIfTI file paths
-        """       
-        # make sure num_A_slices is more than num_B_slices
-        # B 确定（不重复）
-        index_B = index
-        index_A = self.epoch_A_indices[index]
-            
-        volume_idx_A, z_A = getattr(self, f"slice_list_A")[index_A]
-        volume_idx_B, z_B = getattr(self, f"slice_list_B")[index_B]
+        """
+        # A: sequential access to ensure all A slices are visited
+        index_A = index % self.num_A_slices
+        
+        # B: random sampling with reproducible seeds
+        if self.opt.serial_batches:
+            # For serial batches, use sequential access
+            index_B = index % self.num_B_slices
+        else:
+            # For random batches, use epoch + index as seed for reproducibility
+            # This ensures:
+            # 1. Same epoch + index -> same B slice (reproducible)
+            # 2. Different epochs -> different B slices (diversity across epochs)
+            # 3. Different indices -> different B slices (diversity within epoch)
+            # 4. DDP-safe: all processes with same index get same B (if using DistributedSampler)
+            seed = self.current_epoch * 1000000 + index
+            rng = np.random.RandomState(seed=seed)
+            index_B = rng.randint(0, self.num_B_slices)
+
+        volume_idx_A, z_A = self.slice_list_A[index_A]
+        volume_idx_B, z_B = self.slice_list_B[index_B]
 
         A_path = self.A_paths[volume_idx_A]
         B_path = self.B_paths[volume_idx_B]
@@ -204,7 +217,7 @@ class MonaiDataset(BaseDataset):
         return len(self.B_paths)
     
     def __len__(self):
-        return min(self.num_A_slices, self.num_B_slices)
+        return max(self.num_A_slices, self.num_B_slices)
     
 if __name__ == "__main__":
     # Simple test to verify dataset functionality

@@ -4,6 +4,16 @@
 
 Maintained by [So-cean](https://github.com/So-cean). Forked from [taesungp/contrastive-unpaired-translation](https://github.com/taesungp/contrastive-unpaired-translation). CUT / FastCUT 方法来自原作者；本 fork 的工作是医学数据适配、实验网络与损失扩展、训练工程和体数据推理。
 
+## 本分支新增：DDP 与 Ascend NPU 支持
+
+本 fork 为医学影像 CUT 流程新增并整合了 **DDP 多卡训练**与 **Ascend NPU 训练、推理适配**：
+
+- **DDP**：使用 `torchrun` 启动，Accelerate 管理设备、网络、优化器和反向传播。G、D 及动态初始化后的 F 分别准备为可同步的网络；数据使用 `DistributedSampler`，逐 epoch 更新采样顺序，避免重复分片。
+- **Ascend NPU**：公共设备初始化显式加载 `torch_npu`，通过 `transfer_to_npu` 兼容现有 CUDA 风格调用；NPU 多进程训练使用 HCCL。只在主进程写入网络权重，保存时解除并行包装。
+- **统一入口**：`train.py` 负责训练，`inference.py` 负责普通图像或医学 NIfTI 推理；数据工具集中在 `tools/`。
+
+单 NPU 和两卡 DDP 的 CUT 主流程已通过合成 NIfTI 功能验证。推理仅支持单进程；SB 仍为单进程实验分支，3D 模型、混合精度、多机/八卡和完整真实数据训练尚未验证。CUT 当前仅恢复网络权重，完整优化器/调度器状态恢复仍待补齐。
+
 ## 本 fork 做了什么
 
 | 模块 | 实现 | 当前边界 |
@@ -11,7 +21,7 @@ Maintained by [So-cean](https://github.com/So-cean). Forked from [taesungp/contr
 | 医学数据 | `data/monai_dataset.py`：NIfTI、RAS 方向、重采样、裁剪/填充、强度归一化、非配对切片采样 | 主流程为单通道 **2D**；读取 3D 文件不等于 3D 模型 |
 | 网络实验 | ResNet、ConvNeXt / ConvNeXtV2、MONAI U-Net 变体、多尺度判别器 | 默认示例采用 ResNet + basic；其他组合需分别验证 NCE 特征层 |
 | 损失实验 | PatchNCE，以及 SSIM、Canny、adaptive elastic、VGG19 perceptual | 可配置加权；尚未提供统一消融与性能结论 |
-| 训练工程 | Accelerate 网络/优化器准备、分布式采样、动态 netF、权重加载与保存 | 支持单进程和分布式训练；完整多卡训练与混合精度仍待验证 |
+| 训练工程 | Accelerate DDP、Ascend NPU / HCCL、分布式采样、动态 netF、权重加载与保存 | 已验证单 NPU 与两卡 CUT 功能流程；长时间训练和混合精度仍待验证 |
 | 医学影像推理 | `inference.py --dataset_mode monai`：逐切片生成并重建 `.nii.gz` | 输出位于**预处理后的空间**，并非原始采集网格 |
 | SB / UNSB 探索 | `train.py --model sb`、`models/sb_model.py`、条件网络、双数据流 | 单进程实验分支；条件嵌入尚未接入生成器前向，推理与效果验证待完成 |
 | 3D 数据探索 | `data/monai3d_dataset.py` | 仅体数据入口；尚未接通经过验证的 3D G/D/NCE 训练链路 |
@@ -77,7 +87,19 @@ DATA_ROOT=/path/to/data EXPERIMENT_NAME=medical_cut_ssim \
 
 直接运行 `train.py` 时，四项扩展损失的原有默认权重仍为 1。启用 `--lambda_perceptual` 会加载 torchvision 的 ImageNet VGG19 权重，首次可能需要下载；关闭它或进行推理时不加载 VGG。损失的效果需要数据上的消融验证，不预设有提升。`Idt` 当前仅记录，未作为独立项加入总损失。
 
-多进程 CUT 训练使用 `torchrun --nproc_per_node=<卡数> train.py` 并附加完整训练参数；Ascend 环境需先配置匹配的 CANN 和 torch_npu。公共脚本只保留可配置的医学训练/推理示例，历史集群路径和任务脚本不再发布。
+Ascend 两卡 CUT 示例：在已分配的计算节点上配置 CANN 和 Python 环境后，从仓库根目录运行。每进程对应一张 NPU；`batch_size` 为每卡批大小。
+
+```bash
+TORCH_DEVICE_BACKEND_AUTOLOAD=0 torchrun --standalone --nproc_per_node=2 train.py \
+  --dataroot /path/to/data --name medical_cut_ddp \
+  --model cut --dataset_mode monai --direction AtoB \
+  --input_nc 1 --output_nc 1 --netG resnet_9blocks --netD basic \
+  --pixel_dim 1 1 -1 --batch_size 1 --num_threads 0 \
+  --display_id 0 --no_html --no_flip \
+  --lambda_SSIM 0 --lambda_canny 0 --lambda_elastic 0 --lambda_perceptual 0
+```
+
+该命令给出完整参数的使用方式；本节下方记录的两卡功能验证使用较小的 ResNet-6 配置，不代表已经验证所有网络和损失组合。公共脚本只保留可配置的医学训练/推理示例，历史集群路径和任务脚本不再发布。
 
 SB 共用同一训练循环，由 `--model sb` 自动启用第二路数据流：
 
@@ -118,7 +140,22 @@ python inference.py \
 
 ## 待完成事项
 
-尚待补齐：真实数据结果与消融、公开可分享的样例/权重、完整多卡训练和混合精度验证、严格的训练状态恢复、SB 完整训练与推理验证、3D 网络适配。结果整理工具仅复制和分类文件，不计算质量指标。当前没有发布可核验的准确率或加速比。
+尚待补齐：真实数据结果与消融、公开可分享的样例/权重、长时间多卡训练和混合精度验证、严格的训练状态恢复、SB 完整训练与推理验证、3D 网络适配。结果整理工具仅复制和分类文件，不计算质量指标。当前没有发布可核验的准确率或加速比。
+
+## 已有功能验证（2026-10-06）
+
+环境：Ascend 910B3、Python 3.11、PyTorch / torch_npu 2.6.0、Accelerate 1.13.0、MONAI 1.5.2。核查本次统一入口改造保留的测试记录，以下项目已通过：
+
+| 检查 | 覆盖范围 |
+| --- | --- |
+| NPU 训练 | 合成 NIfTI 单卡流程；两卡 torchrun / HCCL 通过统一 `train.py` 完成 1 个 epoch，保存 G/D/F 权重 |
+| 两卡配置 | ResNet-6，`ngf=ndf=4`，NCE 层 `0,4,8`，`num_patches=8`，`netF_nc=8`，扩展损失关闭 |
+| 医学推理 | 统一 `inference.py` 的全 phase、数量限制、AtoB/BtoA、输出形状、affine、间距和背景掩膜 |
+| 普通图像推理 | 单通道图像推理，仅有测试目录时也可导出结果 |
+| SB 探索 | 单 NPU 双数据流的最小训练流程；不代表完整 UNSB 算法实现 |
+| 工具 | 模态映射预检、dry-run、重复执行、间距统计、跨实验结果分类和冲突处理 |
+
+验证脚本、诊断笔记、运行日志和旧集群脚本归档在项目外，不推送到公开仓库。源码入口整理与功能检查已经完成，研究实验的待完成项列于上一节。
 
 ## 数据与结果工具
 

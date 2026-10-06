@@ -2,6 +2,8 @@
 
 # Contrastive Unpaired Translation (CUT)
 
+> 上游文档存档，用于保留原始研究介绍与引用。其中的旧入口（如 `test.py`）、路径和命令不作为本分支的使用说明；当前统一入口及 DDP/NPU 用法请看 [本分支 README](../README.md)。
+
 ### [video (1m)](https://youtu.be/Llg0vE_MVgk) |  [video (10m)](https://youtu.be/jSGOzjmN8q0) | [website](http://taesung.me/ContrastiveUnpairedTranslation/) |   [paper](https://arxiv.org/pdf/2007.15651)
 <br>
 

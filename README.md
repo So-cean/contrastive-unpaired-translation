@@ -12,7 +12,7 @@ Maintained by [So-cean](https://github.com/So-cean). Forked from [taesungp/contr
 - **Ascend NPU**：公共设备初始化显式加载 `torch_npu`，通过 `transfer_to_npu` 兼容现有 CUDA 风格调用；NPU 多进程训练使用 HCCL。只在主进程写入网络权重，保存时解除并行包装。
 - **统一入口**：`train.py` 负责训练，`inference.py` 负责普通图像或医学 NIfTI 推理；数据工具集中在 `tools/`。
 
-单 NPU 和两卡 DDP 的 CUT 主流程已通过合成 NIfTI 功能验证。推理仅支持单进程；SB 仍为单进程实验分支，3D 模型、混合精度、多机/八卡和完整真实数据训练尚未验证。CUT 当前仅恢复网络权重，完整优化器/调度器状态恢复仍待补齐。
+单 NPU 和两卡 DDP 的 CUT 主流程已通过合成 NIfTI 功能验证。**已支持 Resume：加载已保存的网络权重继续训练**，用法见下文。推理仅支持单进程；SB / UNSB 和 3D 模型扩展暂不支持。混合精度、多机/八卡和完整真实数据训练尚未验证。
 
 ## 本 fork 做了什么
 
@@ -23,8 +23,8 @@ Maintained by [So-cean](https://github.com/So-cean). Forked from [taesungp/contr
 | 损失实验 | PatchNCE，以及 SSIM、Canny、adaptive elastic、VGG19 perceptual | 可配置加权；尚未提供统一消融与性能结论 |
 | 训练工程 | Accelerate DDP、Ascend NPU / HCCL、分布式采样、动态 netF、权重加载与保存 | 已验证单 NPU 与两卡 CUT 功能流程；长时间训练和混合精度仍待验证 |
 | 医学影像推理 | `inference.py --dataset_mode monai`：逐切片生成并重建 `.nii.gz` | 输出位于**预处理后的空间**，并非原始采集网格 |
-| SB / UNSB 探索 | `train.py --model sb`、`models/sb_model.py`、条件网络、双数据流 | 单进程实验分支；条件嵌入尚未接入生成器前向，推理与效果验证待完成 |
-| 3D 数据探索 | `data/monai3d_dataset.py` | 仅体数据入口；尚未接通经过验证的 3D G/D/NCE 训练链路 |
+| SB / UNSB 探索 | 保留历史实验代码 | 暂不支持，不属于当前维护的 CUT 主流程 |
+| 3D 模型扩展 | 保留 `data/monai3d_dataset.py` 等实验代码 | 暂不支持；当前医学流程使用 2D 模型处理 3D NIfTI 切片 |
 
 ## 安装
 
@@ -101,26 +101,20 @@ TORCH_DEVICE_BACKEND_AUTOLOAD=0 torchrun --standalone --nproc_per_node=2 train.p
 
 该命令给出完整参数的使用方式；本节下方记录的两卡功能验证使用较小的 ResNet-6 配置，不代表已经验证所有网络和损失组合。公共脚本只保留可配置的医学训练/推理示例，历史集群路径和任务脚本不再发布。
 
-SB 共用同一训练循环，由 `--model sb` 自动启用第二路数据流：
+## 继续训练（Resume，已支持）
 
-```bash
-python train.py --model sb --dataset_mode monai --dataroot /path/to/data \
-  --name medical_sb --input_nc 1 --output_nc 1 --batch_size 1 \
-  --num_threads 0 --display_id 0 --no_html
-```
+使用 `--continue_train` 可以从保存的网络权重继续训练。G/D 在 setup 时加载，动态 F 在首次特征初始化后加载，无需从头训练。权重写入 `checkpoints/<name>/<epoch>_net_{G,D,F}.pth`，保存频率由 `--save_epoch_freq` / `--save_latest_freq` 控制。对应训练参数保存在 `train_opt.txt`。
 
-该模式默认选择条件网络接口，目前仅开放单进程训练。现有生成器里的 time/noise embedding 尚未接入前向，因此此代码仍是实验实现，不能视为完整 UNSB 复现；统一入口会明确拒绝尚未完成的 SB 推理和 3D 模型流程。
-
-## 权重保存与继续训练
-
-权重写入 `checkpoints/<name>/<epoch>_net_{G,D,F}.pth`，保存频率由 `--save_epoch_freq` / `--save_latest_freq` 控制。对应训练参数保存在 `train_opt.txt`。
+例如，已完成第 100 个 epoch，使用相同实验名和训练配置，从最新权重继续：
 
 ```bash
 DATA_ROOT=/path/to/data EXPERIMENT_NAME=medical_cut \
   bash scripts/train_medical.sh --continue_train --epoch latest --epoch_count 101
 ```
 
-这属于**加载网络权重后继续训练**：G/D 在 setup 时加载，动态 F 在首次特征初始化后加载。没有完整保存/恢复全部优化器、学习率调度器和随机数状态，因此不是精确断点续训。保持网络、通道数、NCE 层和预处理参数与原训练一致。
+`--epoch latest` 选择最新权重，也可改成已保存的 epoch 编号；`--epoch_count 101` 手动指定本次起始 epoch，不会从 checkpoint 自动推断。保持网络、通道数、NCE 层、预处理和学习率计划等参数与原训练一致；`train_opt.txt` 供查阅，不会自动恢复所有命令行参数。
+
+**恢复范围**：常规 checkpoint 保存网络权重，没有完整保存全部优化器、学习率调度器、随机数和迭代计数状态，因此不保证与未中断训练完全相同的优化轨迹。代码兼容额外加载已有的 `<epoch>_optimizer_F.pth`，但当前常规保存流程不生成此文件。这一限制不影响上述加载权重后继续训练的用法。
 
 ## 推理并导出 NIfTI
 
@@ -138,9 +132,11 @@ python inference.py \
 
 生成图映射到 `[0, 1]`，并乘以预处理源图 `> 0` 的掩膜；输出采用 MONAI 变换后的 affine，不会反变换回原始空间，也不恢复原始 MRI 强度量纲。此入口按单通道 CUT 生成器设计，不能直接用于 SB 的时间条件推理。
 
-## 待完成事项
+## 当前支持范围与限制
 
-尚待补齐：真实数据结果与消融、公开可分享的样例/权重、长时间多卡训练和混合精度验证、严格的训练状态恢复、SB 完整训练与推理验证、3D 网络适配。结果整理工具仅复制和分类文件，不计算质量指标。当前没有发布可核验的准确率或加速比。
+当前维护 2D CUT 医学数据训练、DDP / Ascend NPU 适配、权重续训，以及普通图像和逐切片 NIfTI 推理。**SB / UNSB、3D 模型扩展暂不支持**，保留的实验代码不代表这些功能已经可用。
+
+真实数据结果与消融、公开样例/权重、长时间多卡训练和混合精度验证尚未提供。结果整理工具仅复制和分类文件，不计算质量指标。当前没有发布可核验的准确率或加速比。
 
 ## 已有功能验证（2026-10-06）
 
@@ -152,10 +148,9 @@ python inference.py \
 | 两卡配置 | ResNet-6，`ngf=ndf=4`，NCE 层 `0,4,8`，`num_patches=8`，`netF_nc=8`，扩展损失关闭 |
 | 医学推理 | 统一 `inference.py` 的全 phase、数量限制、AtoB/BtoA、输出形状、affine、间距和背景掩膜 |
 | 普通图像推理 | 单通道图像推理，仅有测试目录时也可导出结果 |
-| SB 探索 | 单 NPU 双数据流的最小训练流程；不代表完整 UNSB 算法实现 |
 | 工具 | 模态映射预检、dry-run、重复执行、间距统计、跨实验结果分类和冲突处理 |
 
-验证脚本、诊断笔记、运行日志和旧集群脚本归档在项目外，不推送到公开仓库。源码入口整理与功能检查已经完成，研究实验的待完成项列于上一节。
+验证脚本、诊断笔记、运行日志和旧集群脚本归档在项目外，不推送到公开仓库。上述记录覆盖 CUT 主流程的功能检查，适用范围与限制见上一节。
 
 ## 数据与结果工具
 
@@ -179,7 +174,7 @@ python -m tools.collect_results --results-root ./results --output ./collected --
 ## 代码导航
 
 ```text
-train.py              唯一训练入口：CUT / 实验 SB
+train.py              唯一训练入口：当前维护 CUT 主流程
 inference.py          唯一推理入口：普通图像 / NIfTI
 runtime/              共用设备初始化、训练循环和推理流程
 data/                 数据入口和共用医学预处理

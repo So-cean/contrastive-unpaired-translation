@@ -43,7 +43,7 @@ class SBModel(BaseModel):
         parser.add_argument('--num_timesteps', type=int, default=4, help='number of timesteps for SB')
         parser.add_argument('--std', type=float, default=0.1, help='std for noise injection')
 
-        parser.set_defaults(pool_size=0)
+        parser.set_defaults(pool_size=0, netG='resnet_9blocks_cond', netD='basic_cond', netE='basic_cond')
 
         opt, _ = parser.parse_known_args()
         if opt.mode.lower() == "sb":
@@ -89,7 +89,7 @@ class SBModel(BaseModel):
                                           opt.normD, opt.init_type, opt.init_gain,
                                           opt.no_antialias, self.gpu_ids, opt)
             # Energy network E takes 4x channels (concatenated input and output)
-            self.netE = networks.define_D(opt.output_nc * 4, opt.ndf, opt.netD, opt.n_layers_D,
+            self.netE = networks.define_D(opt.output_nc * 4, opt.ndf, opt.netE, opt.n_layers_D,
                                           opt.normD, opt.init_type, opt.init_gain,
                                           opt.no_antialias, self.gpu_ids, opt)
 
@@ -357,6 +357,7 @@ class SBModel(BaseModel):
         else:
             self.loss_NCE = 0.0
 
+        self.loss_NCE_Y = 0.0
         if self.opt.nce_idt and self.opt.lambda_NCE > 0.0:
             self.loss_NCE_Y = self.calculate_NCE_loss(self.real_B, self.idt_B)
             loss_NCE_both = (self.loss_NCE + self.loss_NCE_Y) * 0.5

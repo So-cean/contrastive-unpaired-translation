@@ -12,8 +12,8 @@ Maintained by [So-cean](https://github.com/So-cean). Forked from [taesungp/contr
 | 网络实验 | ResNet、ConvNeXt / ConvNeXtV2、MONAI U-Net 变体、多尺度判别器 | 默认示例采用 ResNet + basic；其他组合需分别验证 NCE 特征层 |
 | 损失实验 | PatchNCE，以及 SSIM、Canny、adaptive elastic、VGG19 perceptual | 可配置加权；尚未提供统一消融与性能结论 |
 | 训练工程 | Accelerate 网络/优化器准备、分布式采样、动态 netF、权重加载与保存 | 支持单进程和分布式训练；完整多卡训练与混合精度仍待验证 |
-| 医学影像推理 | `inference_monai.py` / `predict_monai.py`：逐切片生成并重建 `.nii.gz` | 输出位于**预处理后的空间**，并非原始采集网格 |
-| SB / UNSB 探索 | `train_sb.py`、`models/sb_model.py`、条件网络、双数据流 | 实验分支；未完成端到端结果验证 |
+| 医学影像推理 | `inference.py --dataset_mode monai`：逐切片生成并重建 `.nii.gz` | 输出位于**预处理后的空间**，并非原始采集网格 |
+| SB / UNSB 探索 | `train.py --model sb`、`models/sb_model.py`、条件网络、双数据流 | 单进程实验分支；条件嵌入尚未接入生成器前向，推理与效果验证待完成 |
 | 3D 数据探索 | `data/monai3d_dataset.py` | 仅体数据入口；尚未接通经过验证的 3D G/D/NCE 训练链路 |
 
 ## 安装
@@ -36,6 +36,8 @@ python -m pip install -r requirements.txt
 ```
 
 Ascend 还需要匹配的驱动、CANN、`torch_npu`。本仓库不自动安装或升级这些系统组件。依赖文件给出兼容下限，不是完整锁定文件。
+
+Ascend 示例使用 `TORCH_DEVICE_BACKEND_AUTOLOAD=0`，由公共设备初始化显式导入 torch_npu；在配置好计算节点环境后，将该变量设置到训练/推理命令的环境中。
 
 ## 数据组织与预处理
 
@@ -75,7 +77,17 @@ DATA_ROOT=/path/to/data EXPERIMENT_NAME=medical_cut_ssim \
 
 直接运行 `train.py` 时，四项扩展损失的原有默认权重仍为 1。启用 `--lambda_perceptual` 会加载 torchvision 的 ImageNet VGG19 权重，首次可能需要下载；关闭它或进行推理时不加载 VGG。损失的效果需要数据上的消融验证，不预设有提升。`Idt` 当前仅记录，未作为独立项加入总损失。
 
-多进程训练可使用 `torchrun --nproc_per_node=<卡数> train.py` 并附加完整训练参数；Ascend 环境需先配置匹配的 CANN 和 torch_npu。`scripts/train_*.sh` 中其他带数据集名称的文件是历史集群实验配置，可能包含固定路径、分区和环境名；使用前逐项调整。统一入口是 `scripts/train_medical.sh`。
+多进程 CUT 训练使用 `torchrun --nproc_per_node=<卡数> train.py` 并附加完整训练参数；Ascend 环境需先配置匹配的 CANN 和 torch_npu。公共脚本只保留可配置的医学训练/推理示例，历史集群路径和任务脚本不再发布。
+
+SB 共用同一训练循环，由 `--model sb` 自动启用第二路数据流：
+
+```bash
+python train.py --model sb --dataset_mode monai --dataroot /path/to/data \
+  --name medical_sb --input_nc 1 --output_nc 1 --batch_size 1 \
+  --num_threads 0 --display_id 0 --no_html
+```
+
+该模式默认选择条件网络接口，目前仅开放单进程训练。现有生成器里的 time/noise embedding 尚未接入前向，因此此代码仍是实验实现，不能视为完整 UNSB 复现；统一入口会明确拒绝尚未完成的 SB 推理和 3D 模型流程。
 
 ## 权重保存与继续训练
 
@@ -93,33 +105,51 @@ DATA_ROOT=/path/to/data EXPERIMENT_NAME=medical_cut \
 以下命令与上面的默认训练网络匹配；若训练时修改了 `ngf`、`netG`、归一化等配置，推理必须同步修改。
 
 ```bash
-python predict_monai.py \
+python inference.py \
   --dataroot /path/to/data --name medical_cut --epoch latest \
   --model cut --dataset_mode monai --netG resnet_9blocks \
   --input_nc 1 --output_nc 1 --direction AtoB \
   --pixel_dim 1 1 -1 --phase test --results_dir ./results
 ```
 
-`predict_monai.py` 自动统计源域体数据数；`--phase all` 依次处理 train / val / test。只运行 `inference_monai.py` 时注意默认 `--num_test 50` 的上限。结果保存在 `results/<name>/<phase>_<epoch>/`，包括 `*_fake_B.nii.gz`、预处理源图 `*_real_A.nii.gz`，以及存在时的目标参考图。
+`inference.py` 通过 `--dataset_mode monai` 导出 NIfTI；普通图像使用 `--dataset_mode unaligned`（或相应图像数据入口）。默认处理全部输入，`--num_test N` 限制每个 phase 的源图像/体数据数，`0` 表示全部。`--phase all` 依次处理 train / val / test，并跳过缺失的 phase。权重只加载一次；医学推理共用训练时的预处理定义。结果保存在 `results/<name>/<phase>_<epoch>/`，AtoB 导出 `*_fake_B.nii.gz`，BtoA 导出 `*_fake_A.nii.gz`，同时保留预处理源图与可用的目标参考图。
 
 生成图映射到 `[0, 1]`，并乘以预处理源图 `> 0` 的掩膜；输出采用 MONAI 变换后的 affine，不会反变换回原始空间，也不恢复原始 MRI 强度量纲。此入口按单通道 CUT 生成器设计，不能直接用于 SB 的时间条件推理。
 
 ## 待完成事项
 
-尚待补齐：真实数据结果与消融、公开可分享的样例/权重、完整多卡训练和混合精度验证、严格的训练状态恢复、SB 完整训练与推理验证、3D 网络适配。`results_agg.py` 是历史结果整理脚本，不代表仓库已经提供统一评估基准。当前没有发布可核验的准确率或加速比。
+尚待补齐：真实数据结果与消融、公开可分享的样例/权重、完整多卡训练和混合精度验证、严格的训练状态恢复、SB 完整训练与推理验证、3D 网络适配。结果整理工具仅复制和分类文件，不计算质量指标。当前没有发布可核验的准确率或加速比。
+
+## 数据与结果工具
+
+工具统一放在 `tools/`，从仓库根目录通过模块运行；输入与输出路径必须显式指定。
+
+```bash
+# 沿用已有受试者划分，将 T1w 文件映射到 T2w，以相对软链接组织输出。
+python -m tools.prepare_modality \
+  --split-root /data/T1w/split --source-root /data/T1w/raw \
+  --target-root /data/T2w/raw --output /data/T2w/split --dry-run
+
+# 统计存储网格的 z-spacing 与切片数；省略 --output 时只打印。
+python -m tools.dataset_stats --dataroot /data/T1w/split --output ./results/statistics.csv
+
+# 按 real_A / real_B / fake_A / fake_B 分组，同时保留实验和 phase 子路径。
+python -m tools.collect_results --results-root ./results --output ./collected --dry-run
+```
+
+确认预览后去掉 `--dry-run` 才会写入。模态映射默认将文件名 `_t1` 替换为 `_t2`，可用 `--source-token` / `--target-token` 修改；目标缺失或发生冲突时会在创建链接前报错。结果整理不覆盖已有文件，除非显式传入 `--overwrite`；输出目录即使位于输入目录内，也不会被再次收集。跨实验同名文件通过保留子路径避免碰撞。
 
 ## 代码导航
 
 ```text
-data/                 数据入口与预处理
-models/               CUT、实验 SB、网络与损失
-options/              命令行参数
-scripts/              通用入口与历史实验配置
-train.py              CUT 主训练入口
-train_sb.py           实验 SB 双数据流入口
-inference.py          通用图像推理入口
-inference_monai.py     单 phase 逐切片推理与 NIfTI 重建
-predict_monai.py      phase 遍历与源体数据计数
+train.py              唯一训练入口：CUT / 实验 SB
+inference.py          唯一推理入口：普通图像 / NIfTI
+runtime/              共用设备初始化、训练循环和推理流程
+data/                 数据入口和共用医学预处理
+models/               网络与损失
+options/              训练、推理和公共参数
+tools/                模态划分、数据统计、结果收集
+scripts/              可配置的医学训练/推理示例
 docs/                 数据集说明与上游文档
 ```
 

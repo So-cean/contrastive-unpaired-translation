@@ -1,33 +1,27 @@
 import os
-import re
-import sys
-import random
 import glob
 import numpy as np
 import torch
 
-# Add the project root to Python path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import data
 from data.base_dataset import BaseDataset
 
 
-import monai.transforms as monai_transforms
+from data.medical_transforms import volume_transform
 from monai.data import CacheDataset
 
 
 class MonaiDataset(BaseDataset):
     """
-    This dataset class loads 3D MRI NIfTI files and returns 2D slices for CycleGAN training.
+    Load cached 3D MRI NIfTI volumes and return 2D slices for unpaired training.
     
     It requires two directories to host training volumes:
     - trainA: thick slice data (厚层数据)
     - trainB: thin slice data (薄层数据) 
     Each directory should contain .nii.gz files.
     
-    For each 3D volume, the dataset randomly selects a 2D slice for training.
-    Both domains are processed using the same 2D method.
+    A indexes the valid slices; B is sampled reproducibly using epoch and index.
+    Both domains use the shared medical preprocessing pipeline.
     """
 
     @staticmethod
@@ -83,16 +77,7 @@ class MonaiDataset(BaseDataset):
 
         # Setup MONAI transforms - unified processing for both volume loading and slice processing
         
-        self.transform = monai_transforms.Compose([
-            monai_transforms.LoadImaged(keys=["image"]),
-            monai_transforms.EnsureChannelFirstd(keys=["image"]),
-            monai_transforms.EnsureTyped(keys=["image"], dtype=torch.float32),
-            monai_transforms.Orientationd(keys=["image"], axcodes="RAS", labels=(('L', 'R'), ('P', 'A'), ('I', 'S'))),
-            monai_transforms.Spacingd(keys=["image"], pixdim=pixel_dim, mode=("bilinear")),
-            monai_transforms.CenterSpatialCropd(keys=["image"], roi_size=(256, 256, -1)),
-            monai_transforms.SpatialPadd(keys=["image"], spatial_size=(256, 256, -1), mode="constant", constant_values=0),
-            monai_transforms.ScaleIntensityRangePercentilesd(keys=["image"], lower=0.5, upper=99.5, b_min=0, b_max=1, clip=True),
-        ])
+        self.transform = volume_transform(pixel_dim)
         self.data_A = CacheDataset(
             data=[{"image": path} for path in self.A_paths],
             transform=self.transform,
@@ -221,56 +206,3 @@ class MonaiDataset(BaseDataset):
     
     def __len__(self):
         return max(self.num_A_slices, self.num_B_slices)
-    
-if __name__ == "__main__":
-    # Simple test to verify dataset functionality
-    class DummyOpt:
-        def __init__(self):
-            # self.dataroot = "/public_bme2/bme-wangqian2/songhy2024/data/PVWMI/T1w/k2D-SIEMENS-AERA-1.5T/"
-            self.dataroot = "/public/home_data/home/songhy2024/data/PVWMI/T1w/k2E-PHILIPS-INGENIA-3.0T/"
-            # self.csv_path = "/public_bme2/bme-wangqian2/songhy2024/harmonization_mri/dataset/PVWMI_data.csv"
-            self.phase = "train"
-            self.max_dataset_size = float("inf")
-            self.pixel_dim = (1.0, 1.0, -1)
-            self.num_threads = 4
-            self.serial_batches = False
-            self.direction = 'AtoB'
-            self.input_nc = 1
-            self.output_nc = 1
-            
-    opt = DummyOpt()
-    dataset = MonaiDataset(opt)
-    print(f"Dataset size: {len(dataset)}")
-    
-    try:
-        sample = dataset[0]
-        print(f"A shape: {sample['A'].shape}, B shape: {sample['B'].shape}")
-        print(f"A range: [{sample['A'].min():.3f}, {sample['A'].max():.3f}]")
-        print(f"B range: [{sample['B'].min():.3f}, {sample['B'].max():.3f}]")
-        print(f"A path: {sample['A_paths']}")
-        print(f"B path: {sample['B_paths']}")
-        print("Test successful!")
-    except Exception as e:
-        print(f"Error: {e}")
-        import traceback
-        traceback.print_exc()
-        
-    # vis 3 samples
-    import matplotlib.pyplot as plt
-    for i in range(3):
-        sample = dataset[i]
-        A_img = (sample['A'].numpy().transpose(1, 2, 0) + 1) / 2  # Convert back to [0, 1] for visualization
-        B_img = (sample['B'].numpy().transpose(1, 2, 0) + 1) / 2
-        
-        plt.subplot(2, 3, i + 1)
-        plt.imshow(A_img)
-        plt.axis('off')
-        
-        plt.subplot(2, 3, i + 1 + 3)
-        plt.imshow(B_img)
-        plt.axis('off')
-        
-    plt.show()
-    plt.tight_layout()
-    # save figure
-    plt.savefig("unaligned_dataset_mri_samples.png", dpi=300)

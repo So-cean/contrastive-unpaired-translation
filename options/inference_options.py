@@ -2,7 +2,7 @@ from .base_options import BaseOptions
 
 
 class InferenceOptions(BaseOptions):
-    """This class includes test options.
+    """This class includes inference options.
 
     It also includes shared options defined in BaseOptions.
     """
@@ -13,7 +13,7 @@ class InferenceOptions(BaseOptions):
         parser.add_argument('--phase', type=str, default='test', help='train, val, test, etc')
         # Dropout and Batchnorm has different behavioir during training and test.
         parser.add_argument('--eval', action='store_true', help='use eval mode during test time.')
-        parser.add_argument('--num_test', type=int, default=50, help='how many test images to run')
+        parser.add_argument('--num_test', type=int, default=0, help='maximum source images/volumes per phase; 0 means all')
 
         # To avoid cropping, the load_size should be the same as crop_size
         parser.set_defaults(load_size=parser.get_default('crop_size'))

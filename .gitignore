@@ -75,3 +75,10 @@ core.*
 /PERFORMANCE_TUNING.md
 /docs/VALIDATION.md
 /docs/CONTRIBUTIONS.md
+
+# Historical machine-specific recipes and generated statistics stay local.
+/dataset_statistics.csv
+/collected/
+/scripts/*.sh
+!/scripts/train_medical.sh
+!/scripts/inference_medical.sh

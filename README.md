@@ -2,7 +2,7 @@
 
 **基于 CUT 的医学影像非配对域转换实验仓库**：将 3D NIfTI 体数据转换为 2D 切片训练，逐切片推理后重建 NIfTI 体数据，面向 MRI 跨域 harmonization / image translation 研究。
 
-Maintained by [So-cean](https://github.com/So-cean). Forked from [taesungp/contrastive-unpaired-translation](https://github.com/taesungp/contrastive-unpaired-translation). CUT / FastCUT 方法来自原作者；本 fork 的工作是医学数据适配、实验网络与损失扩展、训练工程和体数据推理。它不仅修改了 dataloader / dataset。详见 [贡献范围与展示口径](docs/CONTRIBUTIONS.md)。
+Maintained by [So-cean](https://github.com/So-cean). Forked from [taesungp/contrastive-unpaired-translation](https://github.com/taesungp/contrastive-unpaired-translation). CUT / FastCUT 方法来自原作者；本 fork 的工作是医学数据适配、实验网络与损失扩展、训练工程和体数据推理。
 
 ## 本 fork 做了什么
 
@@ -11,8 +11,8 @@ Maintained by [So-cean](https://github.com/So-cean). Forked from [taesungp/contr
 | 医学数据 | `data/monai_dataset.py`：NIfTI、RAS 方向、重采样、裁剪/填充、强度归一化、非配对切片采样 | 主流程为单通道 **2D**；读取 3D 文件不等于 3D 模型 |
 | 网络实验 | ResNet、ConvNeXt / ConvNeXtV2、MONAI U-Net 变体、多尺度判别器 | 默认示例采用 ResNet + basic；其他组合需分别验证 NCE 特征层 |
 | 损失实验 | PatchNCE，以及 SSIM、Canny、adaptive elastic、VGG19 perceptual | 可配置加权；尚未提供统一消融与性能结论 |
-| 训练工程 | Accelerate 网络/优化器准备、分布式采样、动态 netF、权重加载与保存 | 单/双 NPU 小模型回归通过；具体范围见 [验证记录](docs/VALIDATION.md) |
-| 医学影像推理 | `test_monai.py` / `predict_monai.py`：逐切片生成并重建 `.nii.gz` | 输出位于**预处理后的空间**，并非原始采集网格 |
+| 训练工程 | Accelerate 网络/优化器准备、分布式采样、动态 netF、权重加载与保存 | 支持单进程和分布式训练；完整多卡训练与混合精度仍待验证 |
+| 医学影像推理 | `inference_monai.py` / `predict_monai.py`：逐切片生成并重建 `.nii.gz` | 输出位于**预处理后的空间**，并非原始采集网格 |
 | SB / UNSB 探索 | `train_sb.py`、`models/sb_model.py`、条件网络、双数据流 | 实验分支；未完成端到端结果验证 |
 | 3D 数据探索 | `data/monai3d_dataset.py` | 仅体数据入口；尚未接通经过验证的 3D G/D/NCE 训练链路 |
 
@@ -35,7 +35,7 @@ python -m pip install torch==2.6.0 torchvision==0.21.0 --index-url https://downl
 python -m pip install -r requirements.txt
 ```
 
-Ascend 还需要匹配的驱动、CANN、`torch_npu`。本仓库不自动安装或升级这些系统组件。依赖文件给出兼容下限，不是完整锁定文件；实际测试版本见 [docs/VALIDATION.md](docs/VALIDATION.md)。
+Ascend 还需要匹配的驱动、CANN、`torch_npu`。本仓库不自动安装或升级这些系统组件。依赖文件给出兼容下限，不是完整锁定文件。
 
 ## 数据组织与预处理
 
@@ -75,7 +75,7 @@ DATA_ROOT=/path/to/data EXPERIMENT_NAME=medical_cut_ssim \
 
 直接运行 `train.py` 时，四项扩展损失的原有默认权重仍为 1。启用 `--lambda_perceptual` 会加载 torchvision 的 ImageNet VGG19 权重，首次可能需要下载；关闭它或进行推理时不加载 VGG。损失的效果需要数据上的消融验证，不预设有提升。`Idt` 当前仅记录，未作为独立项加入总损失。
 
-多进程 / Ascend 说明见 [NPU_TROUBLESHOOTING.md](NPU_TROUBLESHOOTING.md)。`scripts/train_*.sh` 中其他带数据集名称的文件是历史集群实验配置，可能包含固定路径、分区和环境名；使用前逐项调整。统一入口是 `scripts/train_medical.sh`。
+多进程训练可使用 `torchrun --nproc_per_node=<卡数> train.py` 并附加完整训练参数；Ascend 环境需先配置匹配的 CANN 和 torch_npu。`scripts/train_*.sh` 中其他带数据集名称的文件是历史集群实验配置，可能包含固定路径、分区和环境名；使用前逐项调整。统一入口是 `scripts/train_medical.sh`。
 
 ## 权重保存与继续训练
 
@@ -100,19 +100,11 @@ python predict_monai.py \
   --pixel_dim 1 1 -1 --phase test --results_dir ./results
 ```
 
-`predict_monai.py` 自动统计源域体数据数；`--phase all` 依次处理 train / val / test。只运行 `test_monai.py` 时注意默认 `--num_test 50` 的上限。结果保存在 `results/<name>/<phase>_<epoch>/`，包括 `*_fake_B.nii.gz`、预处理源图 `*_real_A.nii.gz`，以及存在时的目标参考图。
+`predict_monai.py` 自动统计源域体数据数；`--phase all` 依次处理 train / val / test。只运行 `inference_monai.py` 时注意默认 `--num_test 50` 的上限。结果保存在 `results/<name>/<phase>_<epoch>/`，包括 `*_fake_B.nii.gz`、预处理源图 `*_real_A.nii.gz`，以及存在时的目标参考图。
 
 生成图映射到 `[0, 1]`，并乘以预处理源图 `> 0` 的掩膜；输出采用 MONAI 变换后的 affine，不会反变换回原始空间，也不恢复原始 MRI 强度量纲。此入口按单通道 CUT 生成器设计，不能直接用于 SB 的时间条件推理。
 
-## 检查与待完成事项
-
-```bash
-ACCELERATE_USE_CPU=true OMP_NUM_THREADS=1 python tests/smoke_cut.py
-ACCELERATE_USE_CPU=true OMP_NUM_THREADS=1 \
-  torchrun --standalone --nproc_per_node=2 tests/smoke_cut.py
-```
-
-这些检查使用随机张量，覆盖参数更新、动态 netF、关闭 NCE、权重往返和多进程参数一致性。医学文件入口的测试见 [docs/VALIDATION.md](docs/VALIDATION.md)。如果登录节点安装了 `torch_npu` 但没有 CANN 动态库，纯 CPU 检查需要额外设置 `TORCH_DEVICE_BACKEND_AUTOLOAD=0`。
+## 待完成事项
 
 尚待补齐：真实数据结果与消融、公开可分享的样例/权重、完整多卡训练和混合精度验证、严格的训练状态恢复、SB 完整训练与推理验证、3D 网络适配。`results_agg.py` 是历史结果整理脚本，不代表仓库已经提供统一评估基准。当前没有发布可核验的准确率或加速比。
 
@@ -123,13 +115,12 @@ data/                 数据入口与预处理
 models/               CUT、实验 SB、网络与损失
 options/              命令行参数
 scripts/              通用入口与历史实验配置
-tests/                合成数据回归检查
 train.py              CUT 主训练入口
 train_sb.py           实验 SB 双数据流入口
-test_monai.py         单 phase 逐切片推理与 NIfTI 重建
+inference.py          通用图像推理入口
+inference_monai.py     单 phase 逐切片推理与 NIfTI 重建
 predict_monai.py      phase 遍历与源体数据计数
-profile_performance.py  单进程训练耗时诊断
-docs/                 验证记录、贡献范围、上游说明
+docs/                 数据集说明与上游文档
 ```
 
 ## 来源与引用

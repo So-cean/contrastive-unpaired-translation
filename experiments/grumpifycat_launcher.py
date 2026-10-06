@@ -25,4 +25,4 @@ class Launcher(TmuxLauncher):
     def test_commands(self):
         # RussianBlue -> Grumpy Cats dataset does not have test split.
         # Therefore, let's set the test split to be the "train" set.
-        return ["python test.py " + str(opt.set(phase='train')) for opt in self.common_options()]
+        return ["python inference.py " + str(opt.set(phase='train')) for opt in self.common_options()]

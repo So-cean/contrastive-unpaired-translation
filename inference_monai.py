@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Test script for MONAI dataset that outputs reconstructed NIfTI volumes.
+Inference script for MONAI dataset that outputs reconstructed NIfTI volumes.
 This script processes 3D MRI volumes slice by slice and reconstructs complete volumes.
 Uses the same data processing pipeline as the training dataset.
 """
@@ -17,7 +17,7 @@ from collections import OrderedDict
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from options.test_options import TestOptions
+from options.inference_options import InferenceOptions
 from models import create_model
 
 try:
@@ -304,7 +304,7 @@ class MonaiTester:
 
 def main():
     # Parse options
-    opt = TestOptions().parse()
+    opt = InferenceOptions().parse()
     
     # Add device setting
     opt.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

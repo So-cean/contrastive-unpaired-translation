@@ -14,10 +14,10 @@ EXTS = {'.nii', '.nii.gz'}
 
 def categorize(filename: str):
     """Map a filename to one of the target folders or return None if unknown.
-    Matches suffixes produced by test_monai: real_A, real_B, fake_B (case-insensitive).
+    Matches suffixes produced by inference_monai: real_A, real_B, fake_B (case-insensitive).
     """
     n = filename.lower()
-    # Prefer explicit test_monai suffixes
+    # Prefer explicit inference_monai suffixes
     if 'real_a' in n:
         return 'real_A'
     if 'real_b' in n:

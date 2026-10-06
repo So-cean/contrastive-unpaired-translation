@@ -15,4 +15,4 @@ class Launcher(TmuxLauncher):
         return ["python train.py " + str(opt) for opt in self.common_options()]
 
     def test_commands(self):
-        return ["python test.py " + str(opt) for opt in self.common_options()]
+        return ["python inference.py " + str(opt) for opt in self.common_options()]

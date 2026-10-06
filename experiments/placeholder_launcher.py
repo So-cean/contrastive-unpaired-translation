@@ -71,7 +71,7 @@ class Launcher(TmuxLauncher):
                 )
 
         commands = [
-            "python test.py " + str(opt.clone().set(
+            "python inference.py " + str(opt.clone().set(
                 name="cityscapes_nce",
                 nce_layers="0,8,16",
                 direction="BtoA",

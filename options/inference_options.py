@@ -1,7 +1,7 @@
 from .base_options import BaseOptions
 
 
-class TestOptions(BaseOptions):
+class InferenceOptions(BaseOptions):
     """This class includes test options.
 
     It also includes shared options defined in BaseOptions.

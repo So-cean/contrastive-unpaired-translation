@@ -61,3 +61,17 @@ __pycache__/
 .venv/
 core
 core.*
+
+# Local-only tests, debugging utilities, and working notes
+/tests/
+/test/
+/test_*.py
+/smoke*.py
+/bug*.py
+/debug*.py
+/profile_performance.py
+/MIGRATION_SUMMARY.md
+/NPU_TROUBLESHOOTING.md
+/PERFORMANCE_TUNING.md
+/docs/VALIDATION.md
+/docs/CONTRIBUTIONS.md

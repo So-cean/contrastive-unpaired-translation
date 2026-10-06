@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
 predict_monai.py
-对 train、val、test 三个 phase 依次进行推理，复用 test_monai.py 主流程。
+对 train、val、test 三个 phase 依次进行推理，复用 inference_monai.py 主流程。
 自动统计每个 phase 的数据量，确保全部推理。
 """
 import sys
 import os
 import torch
 from pathlib import Path
-from options.test_options import TestOptions
-from test_monai import MonaiTester, MONAI_AVAILABLE
+from options.inference_options import InferenceOptions
+from inference_monai import MonaiTester, MONAI_AVAILABLE
 import importlib
 import shutil
 if os.environ.get("ACCELERATE_USE_CPU", "").lower() not in ("true", "1") and shutil.which("npu-smi") and importlib.util.find_spec("torch_npu") is not None:
@@ -33,7 +33,7 @@ def count_nii_files(dataroot, phase, direction):
 
 if __name__ == "__main__":
     # 解析参数
-    opt = TestOptions().parse()
+    opt = InferenceOptions().parse()
     # 支持 --phase all，或指定 train/val/test
     phases = []
     if hasattr(opt, 'phase'):

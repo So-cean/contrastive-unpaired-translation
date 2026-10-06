@@ -34,10 +34,11 @@ class BaseOptions():
         parser.add_argument('--output_nc', type=int, default=3, help='# of output image channels: 3 for RGB and 1 for grayscale')
         parser.add_argument('--ngf', type=int, default=64, help='# of gen filters in the last conv layer')
         parser.add_argument('--ndf', type=int, default=64, help='# of discrim filters in the first conv layer')
-        parser.add_argument('--netD', type=str, default='basic', choices=['basic', 'n_layers', 'pixel', 'patch', 'tilestylegan2', 'stylegan2', 'multiscale'], help='specify discriminator architecture. The basic model is a 70x70 PatchGAN. n_layers allows you to specify the layers in the discriminator')
+        parser.add_argument('--netD', type=str, default='basic', choices=['basic', 'n_layers', 'pixel', 'patch', 'tilestylegan2', 'stylegan2', 'multiscale', 'basic_cond'], help='specify discriminator architecture. The basic model is a 70x70 PatchGAN. n_layers allows you to specify the layers in the discriminator')
+        parser.add_argument('--netE', type=str, default='basic_cond', choices=['basic', 'n_layers', 'pixel', 'patch', 'tilestylegan2', 'stylegan2', 'patchstylegan2', 'basic_cond'], help='specify discriminator architecture. The basic model is a 70x70 PatchGAN. n_layers allows you to specify the layers in the discriminator')
         parser.add_argument('--num_D', type=int, default=2, 
                    help='number of discriminators for multiscale (only for monai_multiscale)')
-        parser.add_argument('--netG', type=str, default='resnet_9blocks', choices=['resnet_9blocks', 'resnet_6blocks', 'unet_6downs', 'unet_7downs', 'unet_8downs', 'stylegan2', 'smallstylegan2', 'resnet_cat', 'convnext_9blocks', 'convnext_24blocks', 'convnextv2_9blocks', 'convnextv2_24blocks'], help='specify generator architecture')
+        parser.add_argument('--netG', type=str, default='resnet_9blocks', choices=['resnet_9blocks', 'resnet_6blocks', 'unet_6downs', 'unet_7downs', 'unet_8downs', 'stylegan2', 'smallstylegan2', 'resnet_cat', 'convnext_9blocks', 'convnext_24blocks', 'resnet_9blocks_cond', 'convnextv2_9blocks', 'convnextv2_24blocks'], help='specify generator architecture')
         parser.add_argument('--n_layers_D', type=int, default=3, help='only used if netD==n_layers')
         parser.add_argument('--normG', type=str, default='instance', choices=['instance', 'batch', 'none'], help='instance normalization or batch normalization for G')
         parser.add_argument('--normD', type=str, default='instance', choices=['instance', 'batch', 'none'], help='instance normalization or batch normalization for D')
@@ -175,7 +176,8 @@ class BaseOptions():
             suffix = ('_' + opt.suffix.format(**vars(opt))) if opt.suffix != '' else ''
             opt.name = opt.name + suffix
 
-        self.print_options(opt)
+        if int(os.environ.get("RANK", "0")) == 0:
+            self.print_options(opt)
 
         # set device (GPU or CPU)
         str_ids = opt.gpu_ids.split(',')

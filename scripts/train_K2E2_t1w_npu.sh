@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=K2I
+#SBATCH --job-name=K2E2
 #SBATCH --output=./slurm_logs/out_%j.log
 #SBATCH --error=./slurm_logs/err_%j.log
 #SBATCH --time=120:00:00

@@ -11,6 +11,7 @@ from .convnext_networks import ConvNeXtGenerator
 from .convnextv2_networks import ConvNeXtV2Generator
 from .unet_generator import UnetGenerator
 from .discriminator import NLayerDiscriminator, MultiScaleDiscriminator, PatchDiscriminator, PixelDiscriminator
+from .ncsn_networks import ResnetGenerator_ncsn, NLayerDiscriminator_ncsn
 
 ###############################################################################
 # Helper Functions
@@ -376,6 +377,10 @@ def define_G(input_nc, output_nc, ngf, netG, norm='batch', use_dropout=False, in
         net = ConvNeXtV2Generator(input_nc, output_nc, ngf, norm_layer=norm_layer, use_dropout=use_dropout, 
                               no_antialias=no_antialias, no_antialias_up=no_antialias_up, n_blocks=24, opt=opt,
                               convnext_kernel_size=7, drop_path_rate=0.2)
+    elif netG == 'resnet_9blocks_cond':
+        # Conditional ResNet generator for SB model (supports time and noise conditioning)
+        net = ResnetGenerator_ncsn(input_nc, output_nc, ngf, norm_layer=norm_layer, use_dropout=use_dropout,
+                                   no_antialias=no_antialias, no_antialias_up=no_antialias_up, n_blocks=9, opt=opt)
     else:
         raise NotImplementedError('Generator model name [%s] is not recognized' % netG)
     return init_net(net, init_type, init_gain, gpu_ids, initialize_weights=('stylegan2' not in netG))
@@ -443,6 +448,9 @@ def define_D(input_nc, ndf, netD, n_layers_D=3, norm='batch', init_type='normal'
 
     elif 'stylegan2' in netD:
         net = StyleGAN2Discriminator(input_nc, ndf, n_layers_D, no_antialias=no_antialias, opt=opt)
+    elif netD == 'basic_cond':
+        # Conditional Discriminator for SB model (supports time conditioning)
+        net = NLayerDiscriminator_ncsn(input_nc, ndf, n_layers=3, norm_layer=norm_layer, no_antialias=no_antialias)
     else:
         raise NotImplementedError('Discriminator model name [%s] is not recognized' % netD)
     return init_net(net, init_type, init_gain, gpu_ids,
@@ -657,16 +665,28 @@ class PatchSampleF(nn.Module):
         self.init_type = init_type
         self.init_gain = init_gain
         self.gpu_ids = gpu_ids
+        # 用于确定性初始化
+        self._mlp_created = False
 
     def create_mlp(self, feats):
+        """Create MLP for each feature layer."""
+        # Skip if already initialized
+        if self._mlp_created:
+            return
+
         for mlp_id, feat in enumerate(feats):
             input_nc = feat.shape[1]
             mlp = nn.Sequential(*[nn.Linear(input_nc, self.nc), nn.ReLU(), nn.Linear(self.nc, self.nc)])
             if len(self.gpu_ids) > 0:
                 mlp.cuda()
             setattr(self, 'mlp_%d' % mlp_id, mlp)
+
+        # Initialize weights
         init_net(self, self.init_type, self.init_gain, self.gpu_ids)
+
+        # Note: Distributed synchronization is handled by Accelerate's prepare()
         self.mlp_init = True
+        self._mlp_created = True
 
     # @torch.no_grad()
     # def _sample_foreground(self, feat, num_patches, real_A):

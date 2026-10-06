@@ -12,7 +12,7 @@ from options.test_options import TestOptions
 from test_monai import MonaiTester, MONAI_AVAILABLE
 import importlib
 import shutil
-if shutil.which("npu-smi") and importlib.util.find_spec("torch_npu") is not None:
+if os.environ.get("ACCELERATE_USE_CPU", "").lower() not in ("true", "1") and shutil.which("npu-smi") and importlib.util.find_spec("torch_npu") is not None:
     import torch_npu
     from torch_npu.contrib import transfer_to_npu
     torch.npu.set_compile_mode(jit_compile=False)
@@ -20,8 +20,8 @@ if shutil.which("npu-smi") and importlib.util.find_spec("torch_npu") is not None
     os.environ['HCCL_EXEC_TIMEOUT'] = '120'  
     os.environ['HCCL_CONNECT_TIMEOUT'] = '120'
 
-import lightning as pl
-pl.seed_everything(42, workers=True)
+from accelerate.utils import set_seed
+set_seed(42)
 
 def count_nii_files(dataroot, phase, direction):
     # 根据 direction 选择主域

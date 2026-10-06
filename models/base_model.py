@@ -94,81 +94,58 @@ class BaseModel(ABC):
             opt (Option class) -- stores all the experiment flags; needs to be a subclass of BaseOptions
         """
         if self.isTrain:
-            if not hasattr(self, 'schedulers'):  # ← ADD THIS CHECK
+            if not hasattr(self, 'schedulers'):  # ADD THIS CHECK
                 self.schedulers = [networks.get_scheduler(optimizer, opt) for optimizer in self.optimizers]
-        # 🔧 只在非训练模式，或者训练模式但不是continue_train时加载
-        if not self.isTrain or (self.isTrain and not opt.continue_train):
-            if not self.isTrain or opt.continue_train:  # 原始条件
-                load_suffix = opt.epoch
-                self.load_networks(load_suffix)
+        if not self.isTrain or opt.continue_train:
+            # Dynamic feature MLPs are restored after their first forward pass.
+            names = [n for n in self.model_names if n != 'F'] if self.isTrain else self.model_names
+            self.load_networks(opt.epoch, names=names)
 
         self.print_networks(opt.verbose)
 
-    def parallelize(self, force_rewrap=False):
-        """Wrap networks with DistributedDataParallel if available, otherwise fallback to DataParallel for single-process multi-gpu.
-        
-        Parameters:
-            force_rewrap (bool) -- if True, unwrap and rewrap networks even if already wrapped (useful after data_dependent_initialize)
+    def prepare_training(self, accelerator):
+        """Prepare concrete networks, after data-dependent netF initialization.
+
+        BaseModel is a controller, not an nn.Module. Passing this object itself
+        to Accelerator.prepare() leaves G/D/F/E unsynchronized.
+        The loader already uses a DistributedSampler; do not shard it twice.
         """
-        import torch.distributed as dist
-        use_ddp = dist.is_available() and dist.is_initialized()
+        self.accelerator = accelerator
+        for name in self.model_names:
+            net = getattr(self, 'net' + name)
+            if any(p.requires_grad for p in net.parameters()):
+                setattr(self, 'net' + name, accelerator.prepare(net))
+        prepared = []
+        for optimizer in self.optimizers:
+            wrapped = accelerator.prepare(optimizer)
+            for name, value in list(vars(self).items()):
+                if name.startswith('optimizer_') and value is optimizer:
+                    setattr(self, name, wrapped)
+            prepared.append(wrapped)
+        self.optimizers = prepared
+        # Include netF, whose optimizer did not exist at setup() time.
+        self.schedulers = [networks.get_scheduler(o, self.opt) for o in self.optimizers]
+
+    def backward(self, loss):
+        if hasattr(self, 'accelerator'):
+            self.accelerator.backward(loss)
+        else:
+            loss.backward()
+
+    def parallelize(self):
+        """Move networks to the correct device.
+        
+        Note: Distributed training is handled by Accelerate's prepare() method.
+        This method only handles device placement for single-GPU or CPU training.
+        """
         for name in self.model_names:
             if isinstance(name, str):
                 net = getattr(self, 'net' + name)
-                if net is None:
-                    continue
-                
-                # 如果已经包装且不强制重新包装，跳过
-                is_wrapped = isinstance(net, torch.nn.DataParallel) or isinstance(net, torch.nn.parallel.DistributedDataParallel)
-                if is_wrapped and not force_rewrap:
-                    continue
-                
-                # 如果强制重新包装，先解包
-                if is_wrapped and force_rewrap:
-                    net = net.module
-                
-                # 检查是否有需要梯度的参数，如果没有则跳过 DDP 包装
-                has_trainable_params = any(p.requires_grad for p in net.parameters())
-                if not has_trainable_params:
-                    # 只移动到设备，不用 DDP 包装
-                    if len(self.opt.gpu_ids) > 0:
-                        net.to(self.opt.gpu_ids[0])
-                    else:
-                        net.to(self.device)
-                    setattr(self, 'net' + name, net)
-                    continue
-                
-                if use_ddp:
-                    net = torch.nn.SyncBatchNorm.convert_sync_batchnorm(net)
-                    # wrap with DistributedDataParallel on single device
-                    device_id = None
-                    if len(self.opt.gpu_ids) > 0:
-                        device_id = self.opt.gpu_ids[0]
-                    if device_id is not None:
-                        net.to(device_id)
-                        net = torch.nn.parallel.DistributedDataParallel(
-                            net, 
-                            device_ids=[device_id], 
-                            output_device=device_id, 
-                            broadcast_buffers=True,
-                            find_unused_parameters=False
-                        )
-                    else:
-                        net.to(self.device)
-                        net = torch.nn.parallel.DistributedDataParallel(
-                            net,
-                            broadcast_buffers=True,
-                            find_unused_parameters=False
-                        )
-                    setattr(self, 'net' + name, net)
-                else:
-                    if len(self.opt.gpu_ids) > 1:
-                        net = torch.nn.DataParallel(net, self.opt.gpu_ids)
-                        setattr(self, 'net' + name, net)
-                    else:
-                        net.to(self.device)
+                if net is not None:
+                    net.to(self.device)
 
-    def data_dependent_initialize(self, data):
+    def data_dependent_initialize(self, data, accelerator=None):
+        """Data-dependent initialization (e.g., for CUT model's netF MLP creation)"""
         pass
 
     def eval(self):
@@ -215,32 +192,50 @@ class BaseModel(ABC):
                 visual_ret[name] = getattr(self, name)
         return visual_ret
 
-    def get_current_losses(self):
-        """Return traning losses / errors. train.py will print out these errors on console, and save them to a file"""
+    def get_current_losses(self, to_cpu=True):
+        """Return training losses/errors.
+
+        Parameters:
+            to_cpu: If True, convert tensor to float (triggers sync);
+                   If False, return tensor (no sync, good for frequent calls)
+        """
         errors_ret = OrderedDict()
         for name in self.loss_names:
             if isinstance(name, str):
-                errors_ret[name] = float(getattr(self, 'loss_' + name))  # float(...) works for both scalar tensor and float number
+                val = getattr(self, 'loss_' + name)
+                if to_cpu:
+                    errors_ret[name] = float(val)
+                else:
+                    errors_ret[name] = val
         return errors_ret
 
-    def save_networks(self, epoch):
+    def save_networks(self, epoch, accelerator=None):
         """Save all the networks to the disk.
 
         Parameters:
             epoch (int) -- current epoch; used in the file name '%s_net_%s.pth' % (epoch, name)
+            accelerator -- Accelerate Accelerator instance (only saves on main process)
         """
+        # Only save on main process when using Accelerate
+        if accelerator is not None and not accelerator.is_main_process:
+            return
+
         for name in self.model_names:
             if isinstance(name, str):
                 save_filename = '%s_net_%s.pth' % (epoch, name)
                 save_path = os.path.join(self.save_dir, save_filename)
                 net = getattr(self, 'net' + name)
 
-                # handle DataParallel / DistributedDataParallel wrappers
-                net_to_save = net.module if hasattr(net, 'module') else net
+                # Unwrap from DDP/DataParallel/Accelerate wrappers
+                net_to_save = net
+                while hasattr(net_to_save, 'module'):
+                    net_to_save = net_to_save.module
 
-                # 拷贝 state_dict 到 CPU 保存，不移动原网络
+                # Save state_dict to CPU without moving the original network
                 state_dict_cpu = {k: v.cpu().clone() for k, v in net_to_save.state_dict().items()}
                 torch.save(state_dict_cpu, save_path)
+
+        # Synchronization belongs to the training loop: saving may be main-rank-only.
 
     def __patch_instance_norm_state_dict(self, state_dict, module, keys, i=0):
         """Fix InstanceNorm checkpoints incompatibility (prior to 0.4)"""
@@ -256,9 +251,9 @@ class BaseModel(ABC):
         else:
             self.__patch_instance_norm_state_dict(state_dict, getattr(module, key), keys, i + 1)
 
-    def load_networks(self, epoch):
+    def load_networks(self, epoch, names=None):
         """Load all the networks from the disk."""
-        for name in self.model_names:
+        for name in (self.model_names if names is None else names):
             if isinstance(name, str):
                 load_filename = '%s_net_%s.pth' % (epoch, name)
                 if self.opt.isTrain and self.opt.pretrained_name is not None:
@@ -269,7 +264,7 @@ class BaseModel(ABC):
                 load_path = os.path.join(load_dir, load_filename)
                 net = getattr(self, 'net' + name)
                 
-                # 处理 DDP/DataParallel 包装
+                # Handle DDP/DataParallel wrapper
                 if isinstance(net, (torch.nn.DataParallel, torch.nn.parallel.DistributedDataParallel)):
                     net = net.module
                 
@@ -279,14 +274,14 @@ class BaseModel(ABC):
                 if hasattr(state_dict, '_metadata'):
                     del state_dict._metadata
 
-                # 🆕 使用 strict=False 允许部分加载（对于动态创建的网络）
+                # Use strict=False to allow partial loading (for dynamically created networks)
                 missing_keys, unexpected_keys = net.load_state_dict(state_dict, strict=False)
                 
-                # 🆕 打印警告信息
+                # Print warning messages
                 if missing_keys:
-                    print(f'  Warning: Missing keys in net{name}: {missing_keys[:5]}...' if len(missing_keys) > 5 else f'  Warning: Missing keys in net{name}: {missing_keys}')
+                    print('  Warning: Missing keys in net%s: %s...' % (name, missing_keys[:5]) if len(missing_keys) > 5 else '  Warning: Missing keys in net%s: %s' % (name, missing_keys))
                 if unexpected_keys:
-                    print(f'  Warning: Unexpected keys in net{name}: {unexpected_keys[:5]}...' if len(unexpected_keys) > 5 else f'  Warning: Unexpected keys in net{name}: {unexpected_keys}')
+                    print('  Warning: Unexpected keys in net%s: %s...' % (name, unexpected_keys[:5]) if len(unexpected_keys) > 5 else '  Warning: Unexpected keys in net%s: %s' % (name, unexpected_keys))
 
     def print_networks(self, verbose):
         """Print the total number of parameters in the network and (if verbose) network architecture

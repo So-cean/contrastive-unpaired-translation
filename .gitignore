@@ -49,3 +49,15 @@ slurm_logs/
 kernel_meta
 cpu.log
 gpu.log
+# Local experiments and private imaging data
+__pycache__/
+*.py[cod]
+*.log
+*.nii
+*.nii.gz
+*.pth
+*.pt
+.env
+.venv/
+core
+core.*

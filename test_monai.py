@@ -94,6 +94,8 @@ class MonaiTestProcessor:
 class MonaiTester:
     def __init__(self, opt):
         self.opt = opt
+        if opt.model != "cut" or opt.input_nc != 1 or opt.output_nc != 1:
+            raise ValueError("NIfTI inference currently supports --model cut --input_nc 1 --output_nc 1.")
         self.model = create_model(opt)
         self.model.setup(opt)
         

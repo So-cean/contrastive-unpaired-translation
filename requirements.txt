@@ -1,6 +1,20 @@
-torch>=1.4.0
-torchvision>=0.5.0
-dominate>=2.4.0
+# Install hardware-matched torch / torchvision / torch_npu first.
+# Compatibility floors, not a locked environment; see docs/VALIDATION.md.
+torch>=2.1
+torchvision>=0.16
+accelerate>=1.0
+monai>=1.3
+nibabel>=5.0
+numpy>=1.24
+scipy
+Pillow
+kornia>=0.7
+pytorch-msssim>=1.0
+dominate>=2.4
 visdom>=0.1.8.8
 packaging
-GPUtil>=1.4.0
+GPUtil>=1.4
+matplotlib
+pandas
+requests
+beautifulsoup4

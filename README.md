@@ -1,316 +1,139 @@
+# CUT for Medical Imaging
 
+**基于 CUT 的医学影像非配对域转换实验仓库**：将 3D NIfTI 体数据转换为 2D 切片训练，逐切片推理后重建 NIfTI 体数据，面向 MRI 跨域 harmonization / image translation 研究。
 
-# Contrastive Unpaired Translation (CUT)
+Maintained by [So-cean](https://github.com/So-cean). Forked from [taesungp/contrastive-unpaired-translation](https://github.com/taesungp/contrastive-unpaired-translation). CUT / FastCUT 方法来自原作者；本 fork 的工作是医学数据适配、实验网络与损失扩展、训练工程和体数据推理。它不仅修改了 dataloader / dataset。详见 [贡献范围与展示口径](docs/CONTRIBUTIONS.md)。
 
-### [video (1m)](https://youtu.be/Llg0vE_MVgk) |  [video (10m)](https://youtu.be/jSGOzjmN8q0) | [website](http://taesung.me/ContrastiveUnpairedTranslation/) |   [paper](https://arxiv.org/pdf/2007.15651)
-<br>
+## 本 fork 做了什么
 
-<img src='imgs/gif_cut.gif' align="right" width=960>
+| 模块 | 实现 | 当前边界 |
+| --- | --- | --- |
+| 医学数据 | `data/monai_dataset.py`：NIfTI、RAS 方向、重采样、裁剪/填充、强度归一化、非配对切片采样 | 主流程为单通道 **2D**；读取 3D 文件不等于 3D 模型 |
+| 网络实验 | ResNet、ConvNeXt / ConvNeXtV2、MONAI U-Net 变体、多尺度判别器 | 默认示例采用 ResNet + basic；其他组合需分别验证 NCE 特征层 |
+| 损失实验 | PatchNCE，以及 SSIM、Canny、adaptive elastic、VGG19 perceptual | 可配置加权；尚未提供统一消融与性能结论 |
+| 训练工程 | Accelerate 网络/优化器准备、分布式采样、动态 netF、权重加载与保存 | 单/双 NPU 小模型回归通过；具体范围见 [验证记录](docs/VALIDATION.md) |
+| 医学影像推理 | `test_monai.py` / `predict_monai.py`：逐切片生成并重建 `.nii.gz` | 输出位于**预处理后的空间**，并非原始采集网格 |
+| SB / UNSB 探索 | `train_sb.py`、`models/sb_model.py`、条件网络、双数据流 | 实验分支；未完成端到端结果验证 |
+| 3D 数据探索 | `data/monai3d_dataset.py` | 仅体数据入口；尚未接通经过验证的 3D G/D/NCE 训练链路 |
 
-<br><br><br>
+## 安装
 
-
-
-We provide our PyTorch implementation of unpaired image-to-image translation based on patchwise contrastive learning and adversarial learning.  No hand-crafted loss and inverse network is used. Compared to [CycleGAN](https://github.com/junyanz/CycleGAN), our model training is faster and less memory-intensive. In addition, our method can be extended to single image training, where each “domain” is only a *single* image.
-
-
-
-
-[Contrastive Learning for Unpaired Image-to-Image Translation](http://taesung.me/ContrastiveUnpairedTranslation/)  
- [Taesung Park](https://taesung.me/), [Alexei A. Efros](https://people.eecs.berkeley.edu/~efros/), [Richard Zhang](https://richzhang.github.io/), [Jun-Yan Zhu](https://www.cs.cmu.edu/~junyanz/)<br>
-UC Berkeley and Adobe Research<br>
- In ECCV 2020
-
-
-<img src='imgs/patchnce.gif' align="right" width=960>
-
-<br><br><br>
-
-### Pseudo code
-```python
-import torch
-cross_entropy_loss = torch.nn.CrossEntropyLoss()
-
-# Input: f_q (BxCxS) and sampled features from H(G_enc(x))
-# Input: f_k (BxCxS) are sampled features from H(G_enc(G(x))
-# Input: tau is the temperature used in PatchNCE loss.
-# Output: PatchNCE loss
-def PatchNCELoss(f_q, f_k, tau=0.07):
-    # batch size, channel size, and number of sample locations
-    B, C, S = f_q.shape
-
-    # calculate v * v+: BxSx1
-    l_pos = (f_k * f_q).sum(dim=1)[:, :, None]
-
-    # calculate v * v-: BxSxS
-    l_neg = torch.bmm(f_q.transpose(1, 2), f_k)
-
-    # The diagonal entries are not negatives. Remove them.
-    identity_matrix = torch.eye(S)[None, :, :]
-    l_neg.masked_fill_(identity_matrix, -float('inf'))
-
-    # calculate logits: (B)x(S)x(S+1)
-    logits = torch.cat((l_pos, l_neg), dim=2) / tau
-
-    # return PatchNCE loss
-    predictions = logits.flatten(0, 1)
-    targets = torch.zeros(B * S, dtype=torch.long)
-    return cross_entropy_loss(predictions, targets)
-```
-## Example Results
-
-### Unpaired Image-to-Image Translation
-<img src="imgs/results.gif" width="800px"/>
-
-### Single Image Unpaired Translation
-<img src="imgs/singleimage.gif" width="800px"/>
-
-
-### Russian Blue Cat to Grumpy Cat
-<img src="imgs/grumpycat.jpg" width="800px"/>
-
-### Parisian Street to Burano's painted houses
-<img src="imgs/paris.jpg" width="800px"/>
-
-
-
-## Prerequisites
-- Linux or macOS
-- Python 3
-- CPU or NVIDIA GPU + CUDA CuDNN
-
-### Update log
-
-9/12/2020: Added single-image translation.
-
-### Getting started
-
-- Clone this repo:
-```bash
-git clone https://github.com/taesungp/contrastive-unpaired-translation CUT
-cd CUT
-```
-
-- Install PyTorch 1.1 and other dependencies (e.g., torchvision, visdom, dominate, gputil).
-
-  For pip users, please type the command `pip install -r requirements.txt`.
-
-  For Conda users,  you can create a new Conda environment using `conda env create -f environment.yml`.
-
-
-### CUT and FastCUT Training and Test
-
-- Download the `grumpifycat` dataset (Fig 8 of the paper. Russian Blue -> Grumpy Cats)
-```bash
-bash ./datasets/download_cut_dataset.sh grumpifycat
-```
-The dataset is downloaded and unzipped at `./datasets/grumpifycat/`.
-
-- To view training results and loss plots, run `python -m visdom.server` and click the URL http://localhost:8097.
-
-- Train the CUT model:
-```bash
-python train.py --dataroot ./datasets/grumpifycat --name grumpycat_CUT --CUT_mode CUT
-```
- Or train the FastCUT model
- ```bash
-python train.py --dataroot ./datasets/grumpifycat --name grumpycat_FastCUT --CUT_mode FastCUT
-```
-The checkpoints will be stored at `./checkpoints/grumpycat_*/web`.
-
-- Test the CUT model:
-```bash
-python test.py --dataroot ./datasets/grumpifycat --name grumpycat_CUT --CUT_mode CUT --phase train
-```
-
-The test results will be saved to a html file here: `./results/grumpifycat/latest_train/index.html`.
-
-### CUT, FastCUT, and CycleGAN
-<img src="imgs/horse2zebra_comparison.jpg" width="800px"/><br>
-
-CUT is trained with the identity preservation loss and with `lambda_NCE=1`, while FastCUT is trained without the identity loss but with higher `lambda_NCE=10.0`. Compared to CycleGAN, CUT learns to perform more powerful distribution matching, while FastCUT is designed as a lighter (half the GPU memory, can fit a larger image), and faster (twice faster to train) alternative to CycleGAN. Please refer to the [paper](https://arxiv.org/abs/2007.15651) for more details.
-
-In the above figure, we measure the percentage of pixels belonging to the horse/zebra bodies, using a pre-trained semantic segmentation model. We find a distribution mismatch between sizes of horses and zebras images -- zebras usually appear larger (36.8\% vs. 17.9\%). Our full method CUT has the flexibility to enlarge the horses, as a means of better matching of the training statistics than CycleGAN. FastCUT behaves more conservatively like CycleGAN.
-
-### Training using our launcher scripts
-
-Please see `experiments/grumpifycat_launcher.py` that generates the above command line arguments. The launcher scripts are useful for configuring rather complicated command-line arguments of training and testing.
-
-Using the launcher, the command below generates the training command of CUT and FastCUT.
-```bash
-python -m experiments grumpifycat train 0   # CUT
-python -m experiments grumpifycat train 1   # FastCUT
-```
-
-To test using the launcher,
-```bash
-python -m experiments grumpifycat test 0   # CUT
-python -m experiments grumpifycat test 1   # FastCUT
-```
-
-Possible commands are run, run_test, launch, close, and so on. Please see `experiments/__main__.py` for all commands. Launcher is easy and quick to define and use. For example, the grumpifycat launcher is defined in a few lines:
-```python
-from .tmux_launcher import Options, TmuxLauncher
-
-
-class Launcher(TmuxLauncher):
-    def common_options(self):
-        return [
-            Options(    # Command 0
-                dataroot="./datasets/grumpifycat",
-                name="grumpifycat_CUT",
-                CUT_mode="CUT"
-            ),
-
-            Options(    # Command 1
-                dataroot="./datasets/grumpifycat",
-                name="grumpifycat_FastCUT",
-                CUT_mode="FastCUT",
-            )
-        ]
-
-    def commands(self):
-        return ["python train.py " + str(opt) for opt in self.common_options()]
-
-    def test_commands(self):
-        # Russian Blue -> Grumpy Cats dataset does not have test split.
-        # Therefore, let's set the test split to be the "train" set.
-        return ["python test.py " + str(opt.set(phase='train')) for opt in self.common_options()]
-
-```
-
-
-
-### Apply a pre-trained CUT model and evaluate FID
-
-To run the pretrained models, run the following.
+从仓库根目录执行。建议独立的 Python 3.11 环境：
 
 ```bash
-
-# Download and unzip the pretrained models. The weights should be located at
-# checkpoints/horse2zebra_cut_pretrained/latest_net_G.pth, for example.
-wget http://efrosgans.eecs.berkeley.edu/CUT/pretrained_models.tar
-tar -xf pretrained_models.tar
-
-# Generate outputs. The dataset paths might need to be adjusted.
-# To do this, modify the lines of experiments/pretrained_launcher.py
-# [id] corresponds to the respective commands defined in pretrained_launcher.py
-# 0 - CUT on Cityscapes
-# 1 - FastCUT on Cityscapes
-# 2 - CUT on Horse2Zebra
-# 3 - FastCUT on Horse2Zebra
-# 4 - CUT on Cat2Dog
-# 5 - FastCUT on Cat2Dog
-python -m experiments pretrained run_test [id]
-
-# Evaluate FID. To do this, first install pytorch-fid of https://github.com/mseitzer/pytorch-fid
-# pip install pytorch-fid
-# For example, to evaluate horse2zebra FID of CUT,
-# python -m pytorch_fid ./datasets/horse2zebra/testB/ results/horse2zebra_cut_pretrained/test_latest/images/fake_B/
-# To evaluate Cityscapes FID of FastCUT,
-# python -m pytorch_fid ./datasets/cityscapes/valA/ ~/projects/contrastive-unpaired-translation/results/cityscapes_fastcut_pretrained/test_latest/images/fake_B/
-# Note that a special dataset needs to be used for the Cityscapes model. Please read below. 
-python -m pytorch_fid [path to real test images] [path to generated images]
-
+git clone https://github.com/So-cean/contrastive-unpaired-translation.git
+cd contrastive-unpaired-translation
+conda env create -f environment.yml
+conda activate medical-cut
 ```
 
-Note: the Cityscapes pretrained model was trained and evaluated on a resized and JPEG-compressed version of the original Cityscapes dataset. To perform evaluation, please download [this](http://efrosgans.eecs.berkeley.edu/CUT/datasets/cityscapes_val_for_CUT.tar) validation set and perform evaluation. 
-
-
-### SinCUT Single Image Unpaired Training
-
-To train SinCUT (single-image translation, shown in Fig 9, 13 and 14 of the paper), you need to
-
-1. set the `--model` option as `--model sincut`, which invokes the configuration and codes at `./models/sincut_model.py`, and
-2. specify the dataset directory of one image in each domain, such as the example dataset included in this repo at `./datasets/single_image_monet_etretat/`. 
-
-For example, to train a model for the [Etretat cliff (first image of Figure 13)](https://github.com/taesungp/contrastive-unpaired-translation/blob/master/imgs/singleimage.gif), please use the following command.
+先按所用硬件安装匹配的 PyTorch 与 torchvision，再安装项目依赖：
 
 ```bash
-python train.py --model sincut --name singleimage_monet_etretat --dataroot ./datasets/single_image_monet_etretat
+# CPU 示例；CUDA / Ascend 环境请换成对应硬件的软件组合。
+python -m pip install torch==2.6.0 torchvision==0.21.0 --index-url https://download.pytorch.org/whl/cpu
+python -m pip install -r requirements.txt
 ```
 
-or by using the experiment launcher script,
+Ascend 还需要匹配的驱动、CANN、`torch_npu`。本仓库不自动安装或升级这些系统组件。依赖文件给出兼容下限，不是完整锁定文件；实际测试版本见 [docs/VALIDATION.md](docs/VALIDATION.md)。
+
+## 数据组织与预处理
+
+```text
+DATA_ROOT/
+├── trainA/*.nii.gz
+├── trainB/*.nii.gz
+├── valA/*.nii.gz       # 可选，单独运行推理
+├── valB/*.nii.gz
+├── testA/*.nii.gz
+└── testB/*.nii.gz
+```
+
+- A / B 表示源域与目标域；训练不要求逐病例配对。当前读取顶层 `.nii.gz`，不递归扫描，也不读取 `.nii`。
+- 请先按受试者划分 train / val / test，再提取切片；训练脚本不会自动划分数据，也不自动运行验证集。
+- 预处理顺序为 RAS → `--pixel_dim` 重采样 → 中心裁剪/填充至 `256 × 256` → 0.5–99.5 百分位归一化。默认 `1 1 -1` 保留 z 轴原间距，模型输入映射到 `[-1, 1]`。
+- 当前 MONAI 数据入口的平面尺寸固定为 256；`--crop_size` / `--load_size` 不改变此尺寸。默认将全部预处理体数据缓存到内存，每个分布式进程都有自己的缓存。
+- 训练保留非零像素数大于 1000 的切片；没有满足条件的切片时使用中间切片。A 遍历、B 按 epoch/index/seed_offset 随机采样。epoch 长度为两域有效切片数的较大值。
+
+## 从一个可复查的 CUT 配置开始
+
 ```bash
-python -m experiments singleimage run 0
+DATA_ROOT=/path/to/data EXPERIMENT_NAME=medical_cut \
+  bash scripts/train_medical.sh --n_epochs 100 --n_epochs_decay 100
 ```
 
-For single-image translation, we adopt network architectural components of [StyleGAN2](https://github.com/NVlabs/stylegan2), as well as the pixel identity preservation loss used in [DTN](https://arxiv.org/abs/1611.02200) and [CycleGAN](https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix/blob/master/models/cycle_gan_model.py#L160). In particular, we adopted the code of [rosinality](https://github.com/rosinality/stylegan2-pytorch), which exists at `models/stylegan_networks.py`.
+该脚本只启动一个训练任务，默认单通道、ResNet-9、basic 判别器、batch size 1，不启动 Visdom。脚本显式关闭本 fork 新增的四项损失，方便先检查 CUT 主路径；这不代表与原论文设置完全相同。
 
-The training takes several hours. To generate the final image using the checkpoint,
+CPU 调试可设置 `ACCELERATE_USE_CPU=true` 并传入 `--gpu_ids -1`。批大小为**每进程**批大小；训练丢弃不完整 batch，数据过少时请减小 batch size / 进程数。
+
+在基础配置跑通后，逐项启用实验损失，例如：
 
 ```bash
-python test.py --model sincut --name singleimage_monet_etretat --dataroot ./datasets/single_image_monet_etretat
+DATA_ROOT=/path/to/data EXPERIMENT_NAME=medical_cut_ssim \
+  bash scripts/train_medical.sh --lambda_SSIM 1
 ```
 
-or simply
+直接运行 `train.py` 时，四项扩展损失的原有默认权重仍为 1。启用 `--lambda_perceptual` 会加载 torchvision 的 ImageNet VGG19 权重，首次可能需要下载；关闭它或进行推理时不加载 VGG。损失的效果需要数据上的消融验证，不预设有提升。`Idt` 当前仅记录，未作为独立项加入总损失。
+
+多进程 / Ascend 说明见 [NPU_TROUBLESHOOTING.md](NPU_TROUBLESHOOTING.md)。`scripts/train_*.sh` 中其他带数据集名称的文件是历史集群实验配置，可能包含固定路径、分区和环境名；使用前逐项调整。统一入口是 `scripts/train_medical.sh`。
+
+## 权重保存与继续训练
+
+权重写入 `checkpoints/<name>/<epoch>_net_{G,D,F}.pth`，保存频率由 `--save_epoch_freq` / `--save_latest_freq` 控制。对应训练参数保存在 `train_opt.txt`。
 
 ```bash
-python -m experiments singleimage run_test 0
+DATA_ROOT=/path/to/data EXPERIMENT_NAME=medical_cut \
+  bash scripts/train_medical.sh --continue_train --epoch latest --epoch_count 101
 ```
 
-### [Datasets](./docs/datasets.md)
-Download CUT/CycleGAN/pix2pix datasets. For example,
+这属于**加载网络权重后继续训练**：G/D 在 setup 时加载，动态 F 在首次特征初始化后加载。没有完整保存/恢复全部优化器、学习率调度器和随机数状态，因此不是精确断点续训。保持网络、通道数、NCE 层和预处理参数与原训练一致。
+
+## 推理并导出 NIfTI
+
+以下命令与上面的默认训练网络匹配；若训练时修改了 `ngf`、`netG`、归一化等配置，推理必须同步修改。
 
 ```bash
-bash datasets/download_cut_datasets.sh horse2zebra
+python predict_monai.py \
+  --dataroot /path/to/data --name medical_cut --epoch latest \
+  --model cut --dataset_mode monai --netG resnet_9blocks \
+  --input_nc 1 --output_nc 1 --direction AtoB \
+  --pixel_dim 1 1 -1 --phase test --results_dir ./results
 ```
 
-The Cat2Dog dataset is prepared from the AFHQ dataset. Please visit https://github.com/clovaai/stargan-v2 and download the AFHQ dataset by `bash download.sh afhq-dataset` of the github repo. Then reorganize directories as follows.
+`predict_monai.py` 自动统计源域体数据数；`--phase all` 依次处理 train / val / test。只运行 `test_monai.py` 时注意默认 `--num_test 50` 的上限。结果保存在 `results/<name>/<phase>_<epoch>/`，包括 `*_fake_B.nii.gz`、预处理源图 `*_real_A.nii.gz`，以及存在时的目标参考图。
+
+生成图映射到 `[0, 1]`，并乘以预处理源图 `> 0` 的掩膜；输出采用 MONAI 变换后的 affine，不会反变换回原始空间，也不恢复原始 MRI 强度量纲。此入口按单通道 CUT 生成器设计，不能直接用于 SB 的时间条件推理。
+
+## 检查与待完成事项
+
 ```bash
-mkdir datasets/cat2dog
-ln -s datasets/cat2dog/trainA [path_to_afhq]/train/cat
-ln -s datasets/cat2dog/trainB [path_to_afhq]/train/dog
-ln -s datasets/cat2dog/testA [path_to_afhq]/test/cat
-ln -s datasets/cat2dog/testB [path_to_afhq]/test/dog
+ACCELERATE_USE_CPU=true OMP_NUM_THREADS=1 python tests/smoke_cut.py
+ACCELERATE_USE_CPU=true OMP_NUM_THREADS=1 \
+  torchrun --standalone --nproc_per_node=2 tests/smoke_cut.py
 ```
 
-The Cityscapes dataset can be downloaded from https://cityscapes-dataset.com.
-After that, use the script `./datasets/prepare_cityscapes_dataset.py` to prepare the dataset. 
+这些检查使用随机张量，覆盖参数更新、动态 netF、关闭 NCE、权重往返和多进程参数一致性。医学文件入口的测试见 [docs/VALIDATION.md](docs/VALIDATION.md)。如果登录节点安装了 `torch_npu` 但没有 CANN 动态库，纯 CPU 检查需要额外设置 `TORCH_DEVICE_BACKEND_AUTOLOAD=0`。
 
+尚待补齐：真实数据结果与消融、公开可分享的样例/权重、完整多卡训练和混合精度验证、严格的训练状态恢复、SB 完整训练与推理验证、3D 网络适配。`results_agg.py` 是历史结果整理脚本，不代表仓库已经提供统一评估基准。当前没有发布可核验的准确率或加速比。
 
-#### Preprocessing of input images
+## 代码导航
 
-The preprocessing of the input images, such as resizing or random cropping, is controlled by the option `--preprocess`, `--load_size`, and `--crop_size`. The usage follows the [CycleGAN/pix2pix](https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix) repo. 
-
-For example, the default setting `--preprocess resize_and_crop --load_size 286 --crop_size 256` resizes the input image to `286x286`, and then makes a random crop of size `256x256` as a way to perform data augmentation. There are other preprocessing options that can be specified, and they are specified in [base_dataset.py](https://github.com/taesungp/contrastive-unpaired-translation/blob/master/data/base_dataset.py#L82). Below are some example options. 
-
- - `--preprocess none`: does not perform any preprocessing. Note that the image size is still scaled to be a closest multiple of 4, because the convolutional generator cannot maintain the same image size otherwise. 
- - `--preprocess scale_width --load_size 768`: scales the width of the image to be of size 768.
- - `--preprocess scale_shortside_and_crop`: scales the image preserving aspect ratio so that the short side is `load_size`, and then performs random cropping of window size `crop_size`.
-
-More preprocessing options can be added by modifying [`get_transform()`](https://github.com/taesungp/contrastive-unpaired-translation/blob/master/data/base_dataset.py#L82) of `base_dataset.py`. 
-
-
-### Citation
-If you use this code for your research, please cite our [paper](https://arxiv.org/pdf/2007.15651).
-```
-@inproceedings{park2020cut,
-  title={Contrastive Learning for Unpaired Image-to-Image Translation},
-  author={Taesung Park and Alexei A. Efros and Richard Zhang and Jun-Yan Zhu},
-  booktitle={European Conference on Computer Vision},
-  year={2020}
-}
+```text
+data/                 数据入口与预处理
+models/               CUT、实验 SB、网络与损失
+options/              命令行参数
+scripts/              通用入口与历史实验配置
+tests/                合成数据回归检查
+train.py              CUT 主训练入口
+train_sb.py           实验 SB 双数据流入口
+test_monai.py         单 phase 逐切片推理与 NIfTI 重建
+predict_monai.py      phase 遍历与源体数据计数
+profile_performance.py  单进程训练耗时诊断
+docs/                 验证记录、贡献范围、上游说明
 ```
 
-If you use the original [pix2pix](https://phillipi.github.io/pix2pix/) and [CycleGAN](https://junyanz.github.io/CycleGAN/) model included in this repo, please cite the following papers
-```
-@inproceedings{CycleGAN2017,
-  title={Unpaired Image-to-Image Translation using Cycle-Consistent Adversarial Networks},
-  author={Zhu, Jun-Yan and Park, Taesung and Isola, Phillip and Efros, Alexei A},
-  booktitle={IEEE International Conference on Computer Vision (ICCV)},
-  year={2017}
-}
+## 来源与引用
 
+请保留并引用原始 [CUT / FastCUT](https://github.com/taesungp/contrastive-unpaired-translation) 工作：Taesung Park, Alexei A. Efros, Richard Zhang, Jun-Yan Zhu, *Contrastive Learning for Unpaired Image-to-Image Translation*, ECCV 2020。原始介绍及 BibTeX 保存在 [上游 README](docs/UPSTREAM_README.md)。
 
-@inproceedings{isola2017image,
-  title={Image-to-Image Translation with Conditional Adversarial Networks},
-  author={Isola, Phillip and Zhu, Jun-Yan and Zhou, Tinghui and Efros, Alexei A},
-  booktitle={IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
-  year={2017}
-}
-```
-
-
-### Acknowledgments
-We thank Allan Jabri and Phillip Isola for helpful discussion and feedback. Our code is developed based on [pytorch-CycleGAN-and-pix2pix](https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix). We also thank [pytorch-fid](https://github.com/mseitzer/pytorch-fid) for FID computation,  [drn](https://github.com/fyu/drn) for mIoU computation, and [stylegan2-pytorch](https://github.com/rosinality/stylegan2-pytorch/) for the PyTorch implementation of StyleGAN2 used in our single-image translation setting.
+SB / 条件网络探索参考 [UNSB](https://github.com/cyclomon/UNSB)，其来源与许可证见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。本 fork 不将上游算法列为原创贡献。[LICENSE](LICENSE) 保留原 CUT 许可证。

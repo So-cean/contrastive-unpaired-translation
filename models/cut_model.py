@@ -100,55 +100,59 @@ class CUTModel(BaseModel):
             self.optimizers.append(self.optimizer_G)
             self.optimizers.append(self.optimizer_D)
         
-        self._init_perceptual_loss()
+        if self.isTrain and opt.lambda_perceptual > 0:
+            self._init_perceptual_loss()
         # self.ssim_loss = SSIM(data_range=2.0, size_average=True, channel=opt.output_nc)
     def evaluate_quality(self, src, tgt):
-        """综合评估生成质量"""
-        src_01 = (src + 1) / 2
-        tgt_01 = (tgt + 1) / 2
-        
-        # 1. 结构相似度（越高越好）
-        from pytorch_msssim import ssim
-        ssim_score = ssim(src_01, tgt_01, data_range=1.0, size_average=True).item()
-        
-        # 2. 边缘保持率（越高越好）
-        brain_mask = (src_01 > 0.1).float()
-        kernel = torch.ones(1, 1, 9, 9, device=brain_mask.device) / 81.0
-        eroded = F.conv2d(brain_mask, kernel, padding=4)
-        eroded = (eroded > 0.98).float()
-        edge_mask = brain_mask - eroded
-        
-        if edge_mask.sum() > 0:
-            edge_lost = ((tgt_01 * edge_mask) < 0.15).sum()
-            edge_preserve_rate = 1 - (edge_lost / edge_mask.sum()).item()
-        else:
-            edge_preserve_rate = 1.0
-        
-        # 3. 清晰度（高频能量，越高越清晰）
-        sobel_x = torch.tensor([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], 
-                            dtype=src.dtype, device=src.device).view(1, 1, 3, 3)
-        sobel_y = torch.tensor([[-1, -2, -1], [0, 0, 0], [1, 2, 1]], 
-                            dtype=src.dtype, device=src.device).view(1, 1, 3, 3)
-        
-        grad_tgt = torch.sqrt(
-            F.conv2d(tgt_01, sobel_x, padding=1)**2 + 
-            F.conv2d(tgt_01, sobel_y, padding=1)**2 + 1e-8
-        )
-        sharpness = grad_tgt.mean().item()
-        
-        # 4. 综合分数
-        quality_score = (
-            0.4 * ssim_score +          # 结构相似度40%
-            0.4 * edge_preserve_rate +  # 边缘保持40%
-            0.2 * min(sharpness / 0.2, 1.0)  # 清晰度20%（归一化）
-        )
-        
-        return {
-            'ssim': ssim_score,
-            'edge_preserve': edge_preserve_rate,
-            'sharpness': sharpness,
-            'quality_score': quality_score
-        }
+        """综合评估生成质量 - 优化版，减少GPU-CPU同步"""
+        with torch.no_grad():
+            src_01 = (src + 1) / 2
+            tgt_01 = (tgt + 1) / 2
+
+            # 1. 结构相似度（越高越好）
+            from pytorch_msssim import ssim
+            ssim_score = ssim(src_01, tgt_01, data_range=1.0, size_average=True)
+
+            # 2. 边缘保持率（越高越好）
+            brain_mask = (src_01 > 0.1).float()
+            kernel = torch.ones(1, 1, 9, 9, device=brain_mask.device) / 81.0
+            eroded = F.conv2d(brain_mask, kernel, padding=4)
+            eroded = (eroded > 0.98).float()
+            edge_mask = brain_mask - eroded
+
+            edge_mask_sum = edge_mask.sum()
+            if edge_mask_sum > 0:
+                edge_lost = ((tgt_01 * edge_mask) < 0.15).sum()
+                edge_preserve_rate = 1 - (edge_lost / edge_mask_sum)
+            else:
+                edge_preserve_rate = torch.tensor(1.0, device=src.device)
+
+            # 3. 清晰度（高频能量，越高越清晰）
+            sobel_x = torch.tensor([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]],
+                                dtype=src.dtype, device=src.device).view(1, 1, 3, 3)
+            sobel_y = torch.tensor([[-1, -2, -1], [0, 0, 0], [1, 2, 1]],
+                                dtype=src.dtype, device=src.device).view(1, 1, 3, 3)
+
+            grad_tgt = torch.sqrt(
+                F.conv2d(tgt_01, sobel_x, padding=1)**2 +
+                F.conv2d(tgt_01, sobel_y, padding=1)**2 + 1e-8
+            )
+            sharpness = grad_tgt.mean()
+
+            # 4. 综合分数（全部在GPU上计算）
+            quality_score = (
+                0.4 * ssim_score +          # 结构相似度40%
+                0.4 * edge_preserve_rate +  # 边缘保持40%
+                0.2 * torch.clamp(sharpness / 0.2, 0.0, 1.0)  # 清晰度20%（归一化，使用clamp替代min）
+            )
+
+            # 只在最后一步转换为float（调用者需要时再同步）
+            return {
+                'ssim': ssim_score,
+                'edge_preserve': edge_preserve_rate,
+                'sharpness': sharpness,
+                'quality_score': quality_score
+            }
 
 
     def _init_perceptual_loss(self):
@@ -391,14 +395,16 @@ class CUTModel(BaseModel):
         
         return ((1 - ncc) ** 2).mean() # range [0, 4]
 
-    def data_dependent_initialize(self, data):
+    def data_dependent_initialize(self, data, accelerator=None):
         """
         The feature network netF is defined in terms of the shape of the intermediate, extracted
         features of the encoder portion of netG. Because of this, the weights of netF are
         initialized at the first feedforward pass with some input images.
-        """
-        import torch.distributed as dist
         
+        Parameters:
+            data: input data sample
+            accelerator: Accelerate Accelerator instance (optional)
+        """
         self.set_input(data)
         
         with torch.no_grad():
@@ -407,7 +413,7 @@ class CUTModel(BaseModel):
                 _ = self.compute_D_loss()
                 _ = self.compute_G_loss()
         
-        # 🆕 如果是 continue_train，在 MLP 创建后再加载 checkpoint
+        # Load checkpoint for continue training
         if self.opt.isTrain and self.opt.continue_train:
             print(f"\n{'='*70}")
             print("Continue training: Loading checkpoint after MLP initialization...")
@@ -415,20 +421,20 @@ class CUTModel(BaseModel):
             
             load_suffix = self.opt.epoch
             
-            # 只加载 netF（G和D已在setup中加载）
+            # Load netF only (G and D already loaded in setup)
             load_filename = '%s_net_F.pth' % load_suffix
-            load_path = os.path.join(self.save_dir, load_filename)
+            load_dir = os.path.join(self.opt.checkpoints_dir, self.opt.pretrained_name) if self.opt.pretrained_name else self.save_dir
+            load_path = os.path.join(load_dir, load_filename)
             
             if os.path.exists(load_path):
                 print(f'Loading netF from {load_path}')
                 state_dict = torch.load(load_path, map_location=str(self.device))
                 
-                # 处理 DDP 包装
+                # Handle DDP/DataParallel wrappers
                 net_f = self.netF
-                if isinstance(net_f, (torch.nn.DataParallel, torch.nn.parallel.DistributedDataParallel)):
+                while hasattr(net_f, 'module'):
                     net_f = net_f.module
                 
-                # 现在 MLP 已创建，应该可以完全加载
                 missing_keys, unexpected_keys = net_f.load_state_dict(state_dict, strict=False)
                 
                 if missing_keys:
@@ -436,24 +442,15 @@ class CUTModel(BaseModel):
                 if unexpected_keys:
                     print(f'  Warning: Unexpected keys: {unexpected_keys}')
                 
-                print("✅ netF checkpoint loaded successfully after MLP initialization")
+                print("✅ netF checkpoint loaded successfully")
             else:
                 print(f"Warning: netF checkpoint not found at {load_path}")
         
-        # 在 DDP 模式下同步参数
-        if dist.is_available() and dist.is_initialized():
-            print("Synchronizing network parameters across ranks...")
-            for param in [self.netF, self.netG, self.netD]:
-                for p in param.parameters():
-                    dist.broadcast(p.data, src=0)
-            print("✅ Parameters synchronized")
-        
         if self.opt.isTrain:
-            if self.opt.lambda_NCE > 0.0:
+            if self.opt.lambda_NCE > 0.0 and any(p.requires_grad for p in self.netF.parameters()):
                 self.optimizer_F = torch.optim.Adam(self.netF.parameters(), lr=self.opt.lr, betas=(self.opt.beta1, self.opt.beta2))
                 self.optimizers.append(self.optimizer_F)
                 
-                # 🆕 如果是 continue_train，也需要加载 optimizer 状态
                 if self.opt.continue_train:
                     self._load_optimizer_state(load_suffix)
 
@@ -478,58 +475,68 @@ class CUTModel(BaseModel):
         self.optimizer_D.zero_grad()
         self.loss_D = self.compute_D_loss()
         # with torch.autograd.detect_anomaly(False):
-        self.loss_D.backward()
+        self.backward(self.loss_D)
         self.optimizer_D.step()
 
         # update G
         self.set_requires_grad(self.netD, False)
         self.optimizer_G.zero_grad()
-        if self.opt.netF == 'mlp_sample':
+        if hasattr(self, 'optimizer_F'):
             self.optimizer_F.zero_grad()
         self.loss_G = self.compute_G_loss()
         # with torch.autograd.detect_anomaly(False):
-        self.loss_G.backward()
+        self.backward(self.loss_G)
         self.optimizer_G.step()
-        if self.opt.netF == 'mlp_sample':
+        if hasattr(self, 'optimizer_F'):
             self.optimizer_F.step()
             
     def evaluate_epoch_end(self):
         """
         在每个epoch结束时调用，进行质量评估
-        这个函数应该在训练脚本中调用
+        优化：减少GPU-CPU同步点
         """
         with torch.no_grad():
             # 使用一个batch进行评估（通常是最后一个batch）
             if hasattr(self, 'real_A') and hasattr(self, 'fake_B'):
                 metrics = self.evaluate_quality(self.real_A, self.fake_B)
                 
+                # 批量转换为float（减少同步次数）
+                ssim_val = float(metrics['ssim'])
+                edge_val = float(metrics['edge_preserve'])
+                sharp_val = float(metrics['sharpness'])
+                score_val = float(metrics['quality_score'])
+
                 print(f"\n{'='*60}")
                 print(f"[Quality Metrics - Epoch {self.current_epoch}]")
-                print(f"  SSIM:          {metrics['ssim']:.4f}")
-                print(f"  Edge Preserve: {metrics['edge_preserve']:.4f}")
-                print(f"  Sharpness:     {metrics['sharpness']:.4f}")
-                print(f"  Quality Score: {metrics['quality_score']:.4f}")
+                print(f"  SSIM:          {ssim_val:.4f}")
+                print(f"  Edge Preserve: {edge_val:.4f}")
+                print(f"  Sharpness:     {sharp_val:.4f}")
+                print(f"  Quality Score: {score_val:.4f}")
                 print(f"{'='*60}\n")
                 
-                # 保存历史记录
+                # 保存历史记录（存储tensor，避免重复转换）
                 if not hasattr(self, '_quality_history'):
                     self._quality_history = []
                 
-                metrics['epoch'] = self.current_epoch
-                self._quality_history.append(metrics)
+                # 存储标量值而非tensor，避免内存泄漏
+                self._quality_history.append({
+                    'epoch': self.current_epoch,
+                    'quality_score': score_val,
+                    'ssim': ssim_val,
+                    'edge_preserve': edge_val,
+                    'sharpness': sharp_val
+                })
                 
                 # 检测最佳点
                 if len(self._quality_history) >= 2:
-                    # 与之前所有epoch比较
-                    current_score = metrics['quality_score']
                     previous_best = max([m['quality_score'] for m in self._quality_history[:-1]])
                     
-                    if current_score > previous_best:
-                        improvement = current_score - previous_best
+                    if score_val > previous_best:
+                        improvement = score_val - previous_best
                         print(f"  ✅ New best quality score! (Improved by {improvement:.4f})")
                         self.save_networks('best_quality')
                     
-                    # 检测过拟合趋势（最近3个epoch质量下降）
+                    # 检测过拟合趋势
                     if len(self._quality_history) >= 4:
                         recent_scores = [m['quality_score'] for m in self._quality_history[-4:]]
                         if all(recent_scores[i] > recent_scores[i+1] for i in range(3)):
@@ -620,6 +627,7 @@ class CUTModel(BaseModel):
         else:
             self.loss_NCE, self.loss_NCE_bd = 0.0, 0.0
 
+        self.loss_NCE_Y = 0.0
         if self.opt.nce_idt and self.opt.lambda_NCE > 0.0:
             self.loss_NCE_Y = self.calculate_NCE_loss(self.real_B, self.idt_B)
             loss_NCE_both = (self.loss_NCE + self.loss_NCE_Y) * 0.5

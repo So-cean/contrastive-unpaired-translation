@@ -118,5 +118,6 @@ python results_agg.py \
 '''
 python results_agg.py \
     --results_root /public/home_data/home/songhy2024/data/PVWMI/T1w/k2I-SIEMENS-SKYRA-3.0T/K2I_pred/CUT_monai_K2I/ \
-    --out_root /public/home_data/home/songhy2024/data/PVWMI/T1w/k2I-SIEMENS-SKYRA-3.0T/K2I_pred/CUT_monai_K2I/agg
+    --out_root /public/home_data/home/songhy2024/data/PVWMI/T1w/k2I-SIEMENS-SKYRA-3.0T/K2I_pred/CUT_monai_K2I/agg \
+    --dry_run
 '''
